@@ -2,7 +2,7 @@
 
 ## Objetivo acordado
 
-Aplicación móvil en español para recomendar libros, películas y series entre amigos. Todos los miembros pueden publicar. Los grupos son privados y se accede por invitación. Cada persona organiza sus estrenos y suscripciones.
+Aplicación móvil en español para recomendar libros, películas, series, compras y sitios entre amigos. Todos los miembros pueden publicar. Los grupos son privados y se accede por invitación. Cada persona organiza sus estrenos y suscripciones.
 
 Se mantiene Expo SDK 54 y Expo Go del usuario. La prueba principal se realiza en el Samsung conectado por USB. Navegación con Expo Router, reutilizando la estructura de `src/app`, componentes y hooks existentes.
 
@@ -22,9 +22,9 @@ El tema sigue al sistema inicialmente. Ajustes permite seleccionar sistema, clar
 
 ## Pantallas y acciones
 
-1. **Inicio:** recomendaciones del grupo, autor, categoría, título, opinión y valoración. Filtros Todos, Libros, Películas y Series. Acción visible para publicar y guardar una recomendación como pendiente.
-2. **Publicar:** título obligatorio, categoría, opinión, nota de 1 a 5 y URL de portada opcional. Previsualización y errores de validación junto al campo. El autor puede editar o eliminar su publicación.
-3. **Mi biblioteca:** recomendaciones guardadas; marcar pendiente o terminado y quitar de la biblioteca.
+1. **Inicio:** recomendaciones del grupo, autor, categoría, título, opinión y valoración. Filtros Todo, Libros, Películas, Series, Compras y Sitios. Acción visible para publicar y guardar una recomendación como pendiente. Compras admite precio y enlace opcionales; Sitios admite ubicación de texto y enlace opcionales. No se conecta a tiendas ni mapas. El calendario conserva las categorías culturales.
+2. **Publicar:** título obligatorio, categoría, opinión, nota de 0,5 a 5 en pasos de media estrella, mediante toque o botones de ajuste y foto de portada opcional adjunta desde la galería. Permitir cambiar o quitar la imagen y verla antes de guardar. Conservar las portadas antiguas por enlace. Copiar las fotos al almacenamiento persistente al guardar. Previsualización y errores de validación junto al campo. El autor puede editar o eliminar su publicación.
+3. **Wishlist:** deseos añadidos directamente con título, categoría, foto y enlace opcionales, sin valoración; también reúne recomendaciones guardadas. Filtros por categoría y estado por cumplir/cumplido. Editar, eliminar y marcar como cumplido. Privada por defecto; selección pública indica intención de compartir con el grupo al conectar cuentas, sin fingir publicación en la entrega local.
 4. **Calendario:** mes, día seleccionado y lista de eventos. Añadir título, categoría y fecha. Editar o eliminar eventos propios. Son privados por defecto; compartir un evento concreto con el grupo no comparte el resto del calendario.
 5. **Suscripciones:** nombre, importe, moneda EUR inicialmente, frecuencia mensual o anual y próxima fecha de cobro. Añadir, editar y eliminar. No se conectan bancos ni se realizan pagos. No mostrar un total mensual que mezcle importes anuales sin convertirlos y etiquetarlos como estimación.
 6. **Ajustes:** nombre visible, tema y, cuando exista servicio compartido, cuenta y grupo.
@@ -57,7 +57,7 @@ Avisos locales configurables para estrenos y renovaciones, con permiso solicitad
 
 Separar datos y persistencia de las pantallas. Modelos mínimos: recomendación, elemento guardado, evento, suscripción y preferencia de tema. Las fechas de calendario se conservan como fechas locales para evitar cambios de día por zona horaria. Los importes se validan y almacenan en céntimos.
 
-Validar entradas vacías, fechas inválidas, importes negativos y URL de portada no HTTP/HTTPS. Una portada ausente o fallida usa un icono de categoría. Un fallo al guardar muestra un mensaje y conserva el formulario; no reemplazar datos ilegibles por una colección vacía silenciosamente. Pedir confirmación para eliminar y mantener estados vacíos útiles.
+Validar entradas vacías, fechas inválidas e importes negativos. El selector permite únicamente imágenes y cancelar no cambia la portada. Una portada ausente o fallida usa un icono de categoría. Un fallo al guardar muestra un mensaje y conserva el formulario; no reemplazar datos ilegibles por una colección vacía silenciosamente. Pedir confirmación para eliminar y mantener estados vacíos útiles.
 
 ## Verificación y final de la primera entrega
 
