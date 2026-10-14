@@ -29,6 +29,10 @@ npx expo start --go --localhost --port 8083
 
 Mantener el cable conectado y Metro encendido. Cambiar el puerto en ambos comandos si fuera necesario.
 
+## Cuentas Supabase
+
+Configuración y migración en [supabase/README.md](supabase/README.md). El acceso está en **Mi perfil → Mi cuenta**. La cuenta permite guardar un nombre remoto; el resto del contenido sigue local hasta implementar su sincronización. Reiniciar Expo después de configurar `.env.local`.
+
 ## Comprobaciones
 
 ```powershell

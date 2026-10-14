@@ -61,6 +61,7 @@ function ProfileEditor() {
     } catch { showError(); } finally { setBusy(false); }
   };
   return <Screen back title="Mi perfil">
+    <TextAction onPress={() => router.push('/account')}>Mi cuenta</TextAction>
     <View style={{ alignItems: 'center', gap: 8, paddingTop: 4, paddingBottom: 4 }}>
       <Pressable disabled={photoBusy} accessibilityRole="button" accessibilityLabel={state.preferences.avatarUri ? 'Cambiar foto de perfil' : 'Añadir foto de perfil'} onPress={() => { void changePhoto(); }} style={{ marginBottom: 4, opacity: photoBusy ? 0.5 : 1 }}><ProfileAvatar size={76} /><View style={{ position: 'absolute', right: -2, bottom: 0, width: 25, height: 25, borderRadius: 13, backgroundColor: p.accent, borderWidth: 2, borderColor: p.background, alignItems: 'center', justifyContent: 'center' }}><PencilSimpleIcon size={12} color={p.onAccent} /></View></Pressable>
       <View><TextAction disabled={photoBusy} onPress={() => { void changePhoto(); }}>{photoBusy ? 'Guardando foto…' : state.preferences.avatarUri ? 'Cambiar foto' : 'Añadir foto'}</TextAction></View>
