@@ -8,6 +8,7 @@ import { ExternalLink } from './external-link';
 import { CategoryIcon, Copy, IconAction, s } from './hub-ui';
 import { recommendationCategories, money, type Recommendation } from '@/features/hub/model';
 import { useHub, usePalette } from '@/features/hub/provider';
+import { hubType } from '@/constants/hub-design';
 
 export function RecommendationCard({ item, feed = false }: { item: Recommendation; feed?: boolean }) {
   const p = usePalette();
@@ -22,7 +23,7 @@ export function RecommendationCard({ item, feed = false }: { item: Recommendatio
       {!hasHero && (item.coverUrl && item.coverUrl !== failedUri ? <Image source={item.coverUrl} onError={() => setFailedUri(item.coverUrl)} contentFit="cover" style={{ width: 76, height: 106, borderRadius: 8 }} accessibilityLabel={`Portada de ${item.title}`} /> : <View style={{ width: 76, height: 106, borderRadius: 8, backgroundColor: p.soft, alignItems: 'center', justifyContent: 'center' }}><CategoryIcon category={item.category} size={34} /></View>)}
       <View style={[s.fill, { gap: 7 }]}><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}><View style={s.inline}><CategoryIcon category={item.category} size={14} /><Copy muted style={s.small}>{recommendationCategories.find((category) => category.value === item.category)?.singular}</Copy></View><View accessibilityLabel={`${item.rating.toLocaleString('es-ES')} de 5 estrellas`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: p.soft, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 }}><RatingIcon size={12} weight="fill" color={p.accent} /><Copy style={{ fontSize: 12, lineHeight: 18, color: p.accent, fontWeight: '600' }}>{item.rating.toLocaleString('es-ES')}</Copy></View></View><Copy style={{ fontSize: 20, lineHeight: 25, fontWeight: '700' }}>{item.title}</Copy><Copy muted style={s.small}>{item.sample ? 'Opinión y nota de muestra' : `Por ${state.preferences.name || 'ti'}`}</Copy></View>
     </View>
-    <Copy style={{ fontSize: 14, lineHeight: 22 }}>{item.opinion}</Copy>
+    <Copy style={hubType.body}>{item.opinion}</Copy>
     {item.category === 'product' && item.priceCents !== undefined && <Copy style={{ color: p.accent, fontWeight: '600' }}>{money(item.priceCents)}</Copy>}
     {item.category === 'place' && item.location && <View style={s.inline}><MapPinIcon size={18} color={p.muted} /><Copy muted style={[s.fill, { fontSize: 13 }]}>{item.location}</Copy></View>}
     {item.link && <ExternalLink href={item.link as `https://${string}` | `http://${string}`} asChild><Pressable accessibilityRole="link" style={{ minHeight: 48, justifyContent: 'center' }}><Copy style={{ color: p.accent, fontSize: 14, fontWeight: '600' }}>{item.category === 'product' ? 'Ver la compra' : 'Ver el sitio'}</Copy></Pressable></ExternalLink>}

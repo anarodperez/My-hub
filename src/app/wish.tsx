@@ -2,7 +2,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { CoverPicker } from '@/components/cover-picker';
-import { Action, Chips, Copy, Field, Screen, TextAction, s, showError } from '@/components/hub-ui';
+import { ItemActions } from '@/components/item-actions';
+import { Action, Chips, Copy, Field, Screen, s, showError } from '@/components/hub-ui';
 import { discardCover, persistCover } from '@/features/hub/covers';
 import { isWebLink, type Category, type Wish } from '@/features/hub/model';
 import { useHub } from '@/features/hub/provider';
@@ -62,6 +63,6 @@ function WishEditor({ existing }: { existing?: Wish }) {
     <Field label="Enlace (opcional)" value={link} onChangeText={setLink} placeholder="https://…" keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2000} error={errors.link} />
     <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />
     <Action disabled={busy || picking} onPress={() => { void save(); }}>{busy ? 'Guardando…' : existing ? 'Guardar cambios' : 'Añadir a mi wishlist'}</Action>
-    {existing && <TextAction danger disabled={busy || picking} onPress={remove}>Eliminar deseo</TextAction>}
+    {existing && <ItemActions label="Opciones del deseo" actions={[{ label: 'Eliminar deseo', onPress: remove, destructive: true, disabled: busy || picking }]} />}
   </Screen>;
 }

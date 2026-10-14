@@ -1,12 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
-import { TrashIcon } from '@/components/hub-icons';
 import { RatingInput } from '@/components/rating-input';
 import { CoverPicker } from '@/components/cover-picker';
-import { Action, CategoryIcon, Chips, ChoiceTabs, Copy, Field, Privacy, Screen, Surface, TextAction, s, showError } from '@/components/hub-ui';
+import { ItemActions } from '@/components/item-actions';
+import { Action, CategoryIcon, Chips, ChoiceTabs, Copy, Field, Privacy, Screen, Surface, s, showError } from '@/components/hub-ui';
 import { isLocalDate, isWebLink, localDate, parseAmountCents, type Category } from '@/features/hub/model';
-import { useHub, usePalette } from '@/features/hub/provider';
+import { useHub } from '@/features/hub/provider';
 import { discardCover, persistCover } from '@/features/hub/covers';
 
 export default function ComposeScreen() {
@@ -20,7 +20,6 @@ export default function ComposeScreen() {
 }
 function Editor({ kind, id, date }: { kind: 'recommendation' | 'event' | 'subscription'; id?: string; date?: string }) {
   const { state, update } = useHub();
-  const p = usePalette();
   const recommendation = state.recommendations.find((item) => item.id === id);
   const event = state.events.find((item) => item.id === id);
   const subscription = state.subscriptions.find((item) => item.id === id);
@@ -99,7 +98,7 @@ function Editor({ kind, id, date }: { kind: 'recommendation' | 'event' | 'subscr
       <Privacy>{kind === 'event' ? 'Este evento es privado' : 'Esta suscripción es privada'}</Privacy>
     </>}
     <Action onPress={() => { void save(); }} disabled={busy || picking}>{busy ? 'Guardando…' : id ? 'Guardar cambios' : kind === 'recommendation' ? 'Guardar recomendación' : kind === 'event' ? 'Añadir a mi calendario' : 'Guardar suscripción'}</Action>
-    {id && <TextAction danger disabled={busy || picking} onPress={remove} icon={<TrashIcon size={18} color={p.danger} />}>Eliminar</TextAction>}
+    {id && <ItemActions label="Opciones del elemento" actions={[{ label: 'Eliminar', onPress: remove, destructive: true, disabled: busy || picking }]} />}
     <Copy muted style={{ fontSize: 12, lineHeight: 19, textAlign: 'center' }}>Guardado en este dispositivo. No se comparte con otras personas todavía.</Copy>
   </Screen>;
 }

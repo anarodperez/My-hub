@@ -15,4 +15,6 @@ Probar con dos cuentas reales que cada una solo accede a su perfil. El código d
 
 ## Estado de esta entrega
 
+Al abrir sin sesión se muestra acceso a cuenta. Mientras se recupera la sesión guardada se muestra carga; una sesión existente abre las pestañas. Cerrar sesión retira las rutas privadas del historial. Los enlaces directos a esas rutas tampoco permiten saltar el acceso. Si falta configuración de Supabase se informa en la pantalla de cuenta.
+
 La conexión pública y Auth se pueden verificar sin crear usuarios. SQL y flujos de correo necesitan acceso al panel y cuentas reales: no se consideran verificados por pasar lint o TypeScript.

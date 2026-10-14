@@ -1,20 +1,24 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { ArrowRightIcon, BookOpenIcon } from '@/components/hub-icons';
 import { AddAction, CategoryIcon, Copy, Empty, Privacy, Screen, Section, TextAction } from '@/components/hub-ui';
 import { RecommendationCard } from '@/components/recommendation-card';
 import { MomentSong } from '@/components/moment-song';
 import { recommendationCategories, type Category } from '@/features/hub/model';
 import { useHub, usePalette } from '@/features/hub/provider';
+import { getHubLayout } from '@/features/hub/layout';
 
 export default function HomeScreen() {
   const { state } = useHub();
   const p = usePalette();
+  const { width, fontScale } = useWindowDimensions();
+  const { feedColumns, contentWidth } = getHubLayout(width, fontScale);
   const [category, setCategory] = useState<Category | 'all'>('all');
   const items = state.recommendations.filter((item) => category === 'all' || item.category === category);
   const options = [{ value: 'all' as const, label: 'Todo' }, ...recommendationCategories];
   return <Screen
+    wide
     avatar
     title={state.preferences.name ? `Hola, ${state.preferences.name}` : 'Tus descubrimientos'}
     subtitle="Lo que merece la pena, en un mismo lugar."
@@ -38,7 +42,7 @@ export default function HomeScreen() {
       <Section title={category === 'all' ? 'Tus descubrimientos' : recommendationCategories.find((option) => option.value === category)?.label || 'Tus descubrimientos'} trailing={<View style={{ minWidth: 28, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: p.soft }}><Copy accessibilityLabel={`${items.length} recomendaciones`} style={{ color: p.accent, fontSize: 12, lineHeight: 18, fontWeight: '600', textAlign: 'center' }}>{items.length}</Copy></View>} />
       <Privacy>Solo en tu móvil</Privacy>
     </View>
-    {items.length ? <View style={{ gap: 20 }}>{items.map((item) => <RecommendationCard key={item.id} item={item} feed />)}</View> : <Empty
+    {items.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>{items.map((item) => <View key={item.id} style={{ width: feedColumns === 1 ? '100%' : (contentWidth - (feedColumns - 1) * 16) / feedColumns }}><RecommendationCard item={item} feed /></View>)}</View> : <Empty
       icon={category === 'all' ? <BookOpenIcon color={p.accent} size={30} weight="duotone" /> : <CategoryIcon category={category} size={30} />}
       title={state.recommendations.length ? 'Tu próximo descubrimiento va aquí' : 'La primera la eliges tú'}
       description="Un libro que no sueltas, una compra que te encanta o un sitio al que volverías."
