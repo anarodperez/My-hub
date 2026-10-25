@@ -1,8 +1,10 @@
+import { randomUUID } from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Platform } from 'react-native';
+import { useRef, useState } from 'react';
+import { Alert, Platform, View, type TextInput } from 'react-native';
 import { CoverPicker } from '@/components/cover-picker';
-import { Action, Chips, Copy, Field, Screen, TextAction, s, showError } from '@/components/hub-ui';
+import { ProductLinkField } from '@/components/product-link-field';
+import { Chips, Copy, Field, Screen, s, showError, SaveAction, TextAction } from '@/components/hub-ui';
 import { discardCover, persistCover } from '@/features/hub/covers';
 import { isWebLink, type Category, type Wish } from '@/features/hub/model';
 import { useHub } from '@/features/hub/provider';
@@ -18,6 +20,7 @@ export default function WishScreen() {
 
 function WishEditor({ existing }: { existing?: Wish }) {
   const { update } = useHub();
+  const titleInput = useRef<TextInput>(null);
   const [title, setTitle] = useState(existing?.title || '');
   const [category, setCategory] = useState<Category>(existing?.category || 'product');
   const [coverUrl, setCoverUrl] = useState(existing?.coverUrl || '');
@@ -35,8 +38,8 @@ function WishEditor({ existing }: { existing?: Wish }) {
     setBusy(true);
     let savedCover = coverUrl;
     try {
-      if (coverUrl && coverUrl !== existing?.coverUrl) savedCover = await persistCover(coverUrl);
-      const wish: Wish = { id: existing?.id || `wish-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title: title.trim(), category, coverUrl: savedCover, completed: existing?.completed || false, ...(link.trim() ? { link: link.trim() } : {}) };
+      if (coverUrl && coverUrl !== existing?.coverUrl && !isWebLink(coverUrl)) savedCover = await persistCover(coverUrl);
+      const wish: Wish = { id: existing?.id || randomUUID(), title: title.trim(), category, coverUrl: savedCover, completed: existing?.completed || false, ...(link.trim() ? { link: link.trim() } : {}) };
       await update((previous) => ({ ...previous, wishes: [wish, ...(previous.wishes || []).filter((item) => item.id !== wish.id)] }));
       if (existing?.coverUrl && existing.coverUrl !== savedCover) discardCover(existing.coverUrl);
       router.back();
@@ -55,13 +58,24 @@ function WishEditor({ existing }: { existing?: Wish }) {
     else Alert.alert('¿Eliminar este deseo?', 'No se puede deshacer.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Eliminar', style: 'destructive', onPress: () => { void perform(); } }]);
   };
   return <Screen back title={existing ? 'Editar deseo' : 'Añadir a wishlist'}>
-    <Copy style={s.title}>Algo que te hace ilusión</Copy>
-    <Copy muted>Para leer, ver, comprar o visitar cuando llegue el momento.</Copy>
+    <View style={{ gap: 8 }}>
+      <Copy accessibilityRole="header" style={s.title}>{category === 'product' ? 'Tu próxima compra' : 'Algo que te hace ilusión'}</Copy>
+      <Copy muted>{category === 'product' ? 'Pega el enlace o añade los datos a mano.' : 'Para leer, ver, comprar o visitar cuando llegue el momento.'}</Copy>
+    </View>
     <Chips value={category} recommendations onChange={(value) => { if (value !== 'all') setCategory(value); }} />
-    <Field label="¿Qué te gustaría?" value={title} onChangeText={setTitle} placeholder="Un libro, una vela, un restaurante…" maxLength={150} error={errors.title} />
-    <Field label="Enlace (opcional)" value={link} onChangeText={setLink} placeholder="https://…" keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2000} error={errors.link} />
-    <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />
-    <Action disabled={busy || picking} onPress={() => { void save(); }}>{busy ? 'Guardando…' : existing ? 'Guardar cambios' : 'Añadir a mi wishlist'}</Action>
-    {existing && <TextAction danger disabled={busy || picking} onPress={remove}>Eliminar deseo</TextAction>}
+    {category === 'product' && <ProductLinkField value={link} onChangeText={setLink} onManual={() => titleInput.current?.focus()} disabled={busy || picking} error={errors.link} onMetadata={(data) => {
+      setTitle(current => current.trim() ? current : data.title);
+      setCoverUrl(current => current || data.coverUrl);
+    }} />}
+    <View style={{ gap: 16 }}>
+      {category === 'product' && <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />}
+      <Field inputRef={titleInput} label={category === 'product' ? 'Nombre del producto' : '¿Qué te gustaría?'} value={title} onChangeText={setTitle} placeholder={category === 'product' ? 'Por ejemplo, una silla de escritorio' : 'Un libro, una vela, un restaurante…'} maxLength={150} error={errors.title} />
+    </View>
+    {category !== 'product' && <>
+      <Field label="Enlace (opcional)" value={link} onChangeText={setLink} placeholder="https://…" keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2000} error={errors.link} />
+      <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />
+    </>}
+    <SaveAction busy={busy} disabled={picking} onPress={() => { void save(); }}>{existing ? 'Guardar cambios' : 'Añadir a mi wishlist'}</SaveAction>
+    {existing && <View style={{ alignSelf: 'center' }}><TextAction danger disabled={busy || picking} onPress={remove}>Eliminar deseo</TextAction></View>}
   </Screen>;
 }
