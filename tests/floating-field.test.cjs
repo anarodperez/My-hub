@@ -8,7 +8,7 @@ function field(props = {}, fontScale = 1) {
   const source = fs.readFileSync('src/components/hub-ui.tsx', 'utf8');
   const component = source.slice(source.indexOf('export function Field('), source.indexOf('export function AddAction('));
   const exports = {};
-  const palette = { accent: 'accent', muted: 'muted', danger: 'danger', surface: 'surface', text: 'text', line: 'line' };
+  const palette = { accent: 'accent', muted: 'muted', danger: 'danger', surface: 'surface', soft: 'soft', inputBorder: 'inputBorder', text: 'text', line: 'line' };
   vm.runInNewContext(ts.transpileModule(component, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
     exports, require: () => ({ jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }),
     useState: initial => { const i = index++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = value; }]; },
@@ -25,24 +25,37 @@ test('el placeholder aparece al enfocar y se conservan callbacks y accesibilidad
   let tree = form.render();
   assert.equal(form.input(tree).props.placeholder, '');
   assert.equal(form.input(tree).props.accessibilityLabel, 'Correo');
+  const idleStyle = Object.assign({}, ...form.input(tree).props.style.filter(Boolean));
+  assert.equal(idleStyle.backgroundColor, 'soft');
+  assert.equal(idleStyle.borderWidth, 0);
+  assert.equal(idleStyle.borderBottomWidth, 0.5);
   form.input(tree).props.onFocus({}); tree = form.render();
+  const focusStyle = Object.assign({}, ...form.input(tree).props.style.filter(Boolean));
+  assert.equal(focusStyle.borderColor, 'accent');
+  assert.equal(focusStyle.borderBottomWidth, 2);
   assert.equal(form.input(tree).props.placeholder, 'tu@correo.com');
-  assert.equal(form.label(tree).props.style.fontSize, 12);
+  assert.equal(form.label(tree).props.style.fontSize, 11);
+  assert.equal(form.label(tree).props.style.backgroundColor, 'transparent');
   form.input(tree).props.onBlur({}); tree = form.render();
   assert.equal(form.label(tree).props.style.fontSize, 16);
+  assert.equal(form.label(tree).props.style.backgroundColor, 'transparent');
   assert.equal(focuses, 1); assert.equal(blurs, 1);
 });
 test('la etiqueta permanece elevada con valor controlado, por defecto o escrito', () => {
-  for (const props of [{ value: 'ana' }, { defaultValue: 'ana' }]) { const form = field(props); assert.equal(form.label(form.render()).props.style.fontSize, 12); }
+  for (const props of [{ value: 'ana' }, { defaultValue: 'ana' }]) { const form = field(props); assert.equal(form.label(form.render()).props.style.fontSize, 11); }
   let changed = '';
   const form = field({ onChangeText: text => { changed = text; } });
   form.input(form.render()).props.onChangeText('Ana');
-  assert.equal(form.label(form.render()).props.style.fontSize, 12); assert.equal(changed, 'Ana');
+  assert.equal(form.label(form.render()).props.style.fontSize, 11); assert.equal(changed, 'Ana');
 });
 test('los campos crecen con texto ampliado y mantienen sitio para contraseñas y errores', () => {
+  const compact = field();
+  assert.equal(Object.assign({}, ...compact.input(compact.render()).props.style.filter(Boolean)).minHeight, 52);
+  const multiline = field({ multiline: true });
+  assert.equal(Object.assign({}, ...multiline.input(multiline.render()).props.style.filter(Boolean)).minHeight, 84);
   const form = field({ error: 'Revisa el correo', trailing: 'eye', secureTextEntry: true }, 2);
   const input = form.input(form.render());
   const style = Object.assign({}, ...input.props.style.filter(Boolean));
-  assert.ok(style.minHeight >= 100); assert.ok(style.paddingRight >= 64);
+  assert.ok(style.minHeight >= 88); assert.ok(style.paddingRight >= 56);
   assert.equal(style.borderColor, 'danger'); assert.equal(input.props.secureTextEntry, true);
 });

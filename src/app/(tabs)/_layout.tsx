@@ -2,7 +2,8 @@ import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
 import { router, Tabs } from 'expo-router';
 import { PixelRatio, Pressable, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BookmarkSimpleIcon, CalendarBlankIcon, HouseIcon, UserCircleIcon, BookOpenIcon } from '@/components/hub-icons';
+import { BookmarkSimpleIcon, CalendarBlankIcon, HouseIcon, UserCircleIcon } from '@/components/hub-icons';
+import { HubMark } from '@/components/hub-mark';
 import { usePalette } from '@/features/hub/provider';
 import { Copy } from '@/components/hub-ui';
 import { getHubLayout } from '@/features/hub/layout';
@@ -14,7 +15,7 @@ export default function TabLayout() {
   const { width, fontScale } = useWindowDimensions();
   const { sidebar } = getHubLayout(width, fontScale);
   return <Tabs tabBar={(props) => sidebar ? <View style={{ width: hubWidths.sidebar, backgroundColor: p.surface, borderRightWidth: 1, borderRightColor: p.line, paddingTop: insets.top }}>
-    <View style={{ padding: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}><BookOpenIcon size={23} color={p.accent} weight="duotone" /><Copy style={{ fontSize: 23, fontWeight: '700' }}>my hub<Copy style={{ color: p.accent }}>.</Copy></Copy></View>
+    <View style={{ padding: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}><HubMark size={32} /><Copy style={{ fontSize: 23, fontWeight: '700' }}>my hub<Copy style={{ color: p.accent }}>.</Copy></Copy></View>
     <View style={{ flex: 1, padding: 12 }}>
       {props.state.routes.map((route, index) => {
         const focused = props.state.index === index;

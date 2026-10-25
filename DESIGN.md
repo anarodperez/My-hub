@@ -6,12 +6,14 @@ Desde 900 puntos, el mismo navegador muestra barra lateral de 224 puntos; debajo
 
 Acciones secundarias en menú accesible, sin ocultar guardar, completar o abrir enlace. Confirmaciones solo tras persistencia correcta. Guardado con movimiento de 200 ms; movimiento reducido elimina la animación. Pulsación con feedback de opacidad, sin animaciones de entrada repetitivas.
 
-Interfaz móvil de operación, cálida y tranquila. Crema, ciruela y salvia en claro; ciruela profunda, marfil y lavanda en oscuro. Portadas y títulos llevan el peso visual. Jerarquía tipográfica clara, espacio generoso y filas compactas para agenda y suscripciones.
+Interfaz móvil de operación, cálida y tranquila. Fondos crema y blanco cálido en claro; carbón y marrón neutro en oscuro. Ciruela para acciones principales, enlaces y selección; salvia para disponibilidad y confirmaciones; melocotón para regalos y valoraciones; gris cálido para información secundaria. Los estados siempre incluyen texto o marcas además de color. El logo conserva su forma. Portadas y títulos llevan el peso visual.
 
 Phosphor de línea para controles y duotone para categorías. No emojis. Navegación inferior de cuatro destinos, etiquetas visibles, botones de 48 puntos como mínimo. Esquinas de 16 puntos en superficies y controles pequeños redondeados. Texto secundario con contraste; color nunca es el único indicador de estado.
 
-Colores exactos y alcance: docs/superpowers/specs/2026-10-13-my-hub-design.md.
+Colores actuales: `src/constants/hub-palettes.ts`, compartidos entre componentes y ambos temas. Contraste AA de pares de texto y contraste de bordes de campos verificados en `tests/hub-palette.test.cjs`. Referencia visual original: docs/superpowers/specs/2026-10-13-my-hub-design.md.
 
 Inicio prioriza contenido: saludo y acción compactos, una sola fila de filtros con iconos y recomendaciones con fotografías amplias. No usa un bloque promocional ni categorías duplicadas. El recuento es una insignia pequeña; el guardado local se comunica sin ocupar una sección dominante. Wishlist conserva tarjetas compactas para leer la lista.
 
 Inicio usa avatar con iniciales, tarjetas con categoría y nota compactas y confirmación de guardado animada que respeta movimiento reducido. Wishlist presenta fotos en dos columnas (una con texto ampliado o pantallas estrechas), conservando edición, enlaces y estado cumplido. Calendario distingue categorías con puntos de color y leyenda en ambos temas.
+
+Organización: Inicio prioriza descubrimientos sin duplicar accesos de las pestañas. Wishlist agrupa colección, estado y búsqueda; categoría y nota se despliegan bajo Filtros, indicando selecciones activas. Calendarios priorizan mes y día seleccionado antes de resúmenes y accesos secundarios. La gestión de grupos y publicaciones usa el menú de opciones; apuntarse o indicar interés permanece visible. Los formularios presentan título y fecha antes de texto largo o fotos. Mi cuenta reúne identidad, edición, grupos, canción, apariencia y cierre de sesión.

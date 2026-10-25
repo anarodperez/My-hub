@@ -9,18 +9,18 @@ import { useHub, usePalette } from '@/features/hub/provider';
 import type { GroupPostKind } from '@/features/hub/backend-types';
 
 export default function GroupPostScreen() {
-  const { groupId, kind } = useLocalSearchParams<{ groupId: string; kind: string }>();
+  const { groupId, kind, date } = useLocalSearchParams<{ groupId: string; kind: string; date?: string }>();
   const { repository } = useHub();
   if (kind !== 'plan' && kind !== 'gift') return <Screen back title="Publicación"><Copy>Tipo de publicación no válido.</Copy></Screen>;
-  return <GroupPostForm key={`${repository?.accountId}:${groupId}:${kind}`} groupId={groupId} kind={kind} />;
+  return <GroupPostForm key={`${repository?.accountId}:${groupId}:${kind}:${date || ''}`} groupId={groupId} kind={kind} initialDate={date} />;
 }
-function GroupPostForm({ groupId, kind }: { groupId: string; kind: GroupPostKind }) {
+function GroupPostForm({ groupId, kind, initialDate }: { groupId: string; kind: GroupPostKind; initialDate?: string }) {
   const { repository, media } = useHub();
   const p = usePalette();
   const [id] = useState(randomUUID);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(kind === 'plan' && initialDate && isLocalDate(initialDate) ? initialDate : '');
   const [cover, setCover] = useState('');
   const [groupName, setGroupName] = useState('');
   const [checking, setChecking] = useState(true);
@@ -68,8 +68,9 @@ function GroupPostForm({ groupId, kind }: { groupId: string; kind: GroupPostKind
     {checking && <ActivityIndicator color={p.accent} accessibilityLabel="Comprobando grupo" />}
     {!!groupName && <View style={{ gap: 20 }}>
       <Field label={kind === 'plan' ? '¿Qué os apetece hacer?' : '¿Qué quieres regalar?'} placeholder={kind === 'plan' ? 'Una tarde de cine' : 'Un libro que ya he leído'} value={title} onChangeText={setTitle} maxLength={150} editable={!busy} />
+      {kind === 'plan' && <Field label="Fecha (opcional)" placeholder="AAAA-MM-DD" value={date} onChangeText={setDate} maxLength={10} editable={!busy} autoCapitalize="none" />}
       <Field label="Descripción (opcional)" placeholder={kind === 'plan' ? 'Lugar, hora o cualquier idea para organizaros' : 'Cuenta cómo está y cómo podéis recogerlo'} value={description} onChangeText={setDescription} maxLength={2000} multiline editable={!busy} />
-      {kind === 'plan' ? <Field label="Fecha (opcional)" placeholder="AAAA-MM-DD" value={date} onChangeText={setDate} maxLength={10} editable={!busy} autoCapitalize="none" /> : <CoverPicker uri={cover} onChange={setCover} busy={busy || picking} onBusyChange={setPicking} />}
+      {kind === 'gift' && <CoverPicker uri={cover} onChange={setCover} busy={busy || picking} onBusyChange={setPicking} />}
       <SaveAction busy={busy} disabled={picking || !title.trim()} onPress={() => { void publish(); }}>Publicar en el grupo</SaveAction>
     </View>}
     {!!error && <Copy accessibilityRole="alert" style={{ color: p.danger }}>{error}</Copy>}

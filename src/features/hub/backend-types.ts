@@ -25,4 +25,4 @@ export type AvailabilityRow = { id: string; group_id: string; owner_id: string; 
 export type GroupPostKind = 'plan' | 'gift';
 export type GroupPostInput = { newId: string; group_id: string; kind: GroupPostKind; title: string; description: string; event_date?: string | null; cover_path?: string };
 export type GroupResponse = { post_id: string; owner_id: string };
-export type GroupPostRow = Omit<GroupPostInput, 'newId'> & Versioned & { owner_id: string; created_at: string; status: 'open' | 'delivered'; group_post_responses: GroupResponse[] };
+export type GroupPostRow = Omit<GroupPostInput, 'newId'> & Versioned & { owner_id: string; created_at: string; status: 'open' | 'reserved' | 'delivered'; reserved_for: string | null; group_post_responses: GroupResponse[] };

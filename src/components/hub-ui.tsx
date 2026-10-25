@@ -1,5 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { ProfileAvatar } from './profile-avatar';
+import { HubMark } from './hub-mark';
 import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { ActivityIndicator, Alert, Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type TextInputProps, type TextProps, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,9 +48,9 @@ export function Action({ children, onPress, secondary, disabled, icon, label, st
 export function SaveAction({ onPress, busy = false, disabled = false, children = 'Guardar cambios' }: { onPress: () => void; busy?: boolean; disabled?: boolean; children?: ReactNode }) {
   const p = usePalette();
   const feedback = useButtonFeedback(busy || disabled);
-  return <AnimatedPressable {...feedback.handlers} accessibilityRole="button" accessibilityState={{ disabled: busy || disabled, busy }} disabled={busy || disabled} onPress={onPress} style={{ alignSelf: 'center', minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 18, borderRadius: 24, backgroundColor: feedback.pressed ? p.line : p.soft, borderWidth: 1, borderColor: feedback.focused ? p.accent : p.line, opacity: busy || disabled ? 0.45 : feedback.pressed ? 0.65 : 1, transform: [{ scale: feedback.scale }] }}>
-    {busy ? <ActivityIndicator size="small" color={p.accent} /> : <CheckIcon size={15} color={p.accent} />}
-    <Copy accessibilityLiveRegion="polite" style={{ color: p.accent, fontSize: 13, lineHeight: 18, fontWeight: '600', flexShrink: 1 }}>{busy ? 'Guardando\u2026' : children}</Copy>
+  return <AnimatedPressable {...feedback.handlers} accessibilityRole="button" accessibilityState={{ disabled: busy || disabled, busy }} disabled={busy || disabled} onPress={onPress} style={{ alignSelf: 'center', minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 18, borderRadius: 24, backgroundColor: feedback.pressed ? p.surface : p.sage, borderWidth: 1, borderColor: feedback.focused ? p.sageText : p.line, opacity: busy || disabled ? 0.45 : feedback.pressed ? 0.65 : 1, transform: [{ scale: feedback.scale }] }}>
+    {busy ? <ActivityIndicator size="small" color={p.sageText} /> : <CheckIcon size={15} color={p.sageText} />}
+    <Copy accessibilityLiveRegion="polite" style={{ color: p.sageText, fontSize: 13, lineHeight: 18, fontWeight: '600', flexShrink: 1 }}>{busy ? 'Guardando\u2026' : children}</Copy>
   </AnimatedPressable>;
 }
 
@@ -59,12 +60,12 @@ export function TextAction({ children, onPress, disabled, icon, danger }: { chil
 }
 export function ChoiceTabs<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (value: T) => void }) {
   const p = usePalette();
-  return <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: p.line, gap: 24 }}>{options.map((option) => <Pressable key={option.value} accessibilityRole="tab" accessibilityState={{ selected: value === option.value }} onPress={() => onChange(option.value)} style={({ pressed }) => ({ minHeight: 48, paddingHorizontal: 2, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: value === option.value ? p.accent : 'transparent', opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 14, lineHeight: 22, fontWeight: value === option.value ? '700' : '400', color: value === option.value ? p.accent : p.muted }}>{option.label}</Copy></Pressable>)}</View>;
+  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', borderBottomWidth: 1, borderBottomColor: p.line, columnGap: 20 }}>{options.map((option) => <Pressable key={option.value} accessibilityRole="tab" accessibilityState={{ selected: value === option.value }} onPress={() => onChange(option.value)} style={({ pressed }) => ({ minHeight: 48, paddingHorizontal: 2, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: value === option.value ? p.accent : 'transparent', opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 14, lineHeight: 22, fontWeight: value === option.value ? '700' : '400', color: value === option.value ? p.accent : p.muted }}>{option.label}</Copy></Pressable>)}</View>;
 }
-export function IconAction({ label, onPress, children, disabled = false }: { label: string; onPress: () => void; children: ReactNode; disabled?: boolean }) {
+export function IconAction({ label, onPress, children, disabled = false, expanded }: { label: string; onPress: () => void; children: ReactNode; disabled?: boolean; expanded?: boolean }) {
   const p = usePalette();
   const feedback = useButtonFeedback(disabled);
-  return <AnimatedPressable {...feedback.handlers} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} hitSlop={4} onPress={onPress} style={[s.iconAction, { borderRadius: 12, borderWidth: 1, borderColor: feedback.focused ? p.accent : 'transparent', backgroundColor: feedback.pressed || feedback.hovered ? p.soft : 'transparent', transform: [{ scale: feedback.scale }], opacity: disabled ? 0.45 : feedback.pressed ? 0.8 : 1 }]}>{children}</AnimatedPressable>;
+  return <AnimatedPressable {...feedback.handlers} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, expanded }} disabled={disabled} hitSlop={4} onPress={onPress} style={[s.iconAction, { borderRadius: 12, borderWidth: 1, borderColor: feedback.focused ? p.accent : 'transparent', backgroundColor: feedback.pressed || feedback.hovered ? p.soft : 'transparent', transform: [{ scale: feedback.scale }], opacity: disabled ? 0.45 : feedback.pressed ? 0.8 : 1 }]}>{children}</AnimatedPressable>;
 }
 export function Screen({ title, subtitle, children, back, action, avatar = false, scrollEnabled = true, wide = false, renderList }: { title: string; subtitle?: string; children?: ReactNode; back?: boolean; action?: ReactNode; avatar?: boolean; scrollEnabled?: boolean; wide?: boolean; renderList?: (header: ReactNode) => ReactNode }) {
   const p = usePalette();
@@ -91,12 +92,13 @@ export function Screen({ title, subtitle, children, back, action, avatar = false
   const { loading, error, warning, retry, needsImport, importing, importProgress, importData, skipImport, refresh } = useHub();
   useFocusEffect(useCallback(() => { if (!loading && !needsImport && !importing) void refresh().catch(() => {}); }, [refresh, loading, needsImport, importing]));
   const { width } = useWindowDimensions();
-  const heading = !back && <View style={s.heading}>{avatar && <IconAction label="Abrir mi perfil" onPress={() => router.push('/settings')}><ProfileAvatar /></IconAction>}<View style={s.fill}><Copy accessibilityRole="header" style={[s.title, avatar && { fontSize: 27, lineHeight: 33 }]}>{title}</Copy>{subtitle && <Copy muted style={s.subtitle}>{subtitle}</Copy>}</View>{action}</View>;
+  const heading = !back ? <View style={s.heading}>{avatar && <IconAction label="Abrir mi cuenta" onPress={() => router.push('/settings')}><ProfileAvatar /></IconAction>}<View style={s.fill}><Copy accessibilityRole="header" style={[s.title, avatar && { fontSize: 27, lineHeight: 33 }]}>{title}</Copy>{subtitle && <Copy muted style={s.subtitle}>{subtitle}</Copy>}</View>{action}</View> : subtitle && <Copy muted style={{ fontSize: 15, lineHeight: 22 }}>{subtitle}</Copy>;
   return <SafeAreaView edges={['top', 'left', 'right']} style={[s.fill, { backgroundColor: p.background }]}>
     {!(wide && width >= 900) && <View style={s.topbar}>
-      {back ? <IconAction label="Volver" onPress={() => router.back()}><ArrowLeftIcon color={p.text} size={24} /></IconAction> : <View style={s.brand}><BookOpenIcon color={p.accent} size={23} weight="duotone" /><Copy style={s.brandName}>my hub<Copy style={{ color: p.accent }}>.</Copy></Copy></View>}
-      {back ? <Copy style={s.navTitle}>{title}</Copy> : <Copy muted style={s.localLabel}>Tu espacio cultural</Copy>}
-      {!back && <IconAction label="Abrir mi perfil" onPress={() => router.push('/settings')}><UserCircleIcon size={28} weight="duotone" color={p.accent} /></IconAction>}
+      {back ? <IconAction label="Volver" onPress={() => router.back()}><ArrowLeftIcon color={p.text} size={24} /></IconAction> : <View style={s.brand}><HubMark size={32} /><Copy style={s.brandName}>my hub<Copy style={{ color: p.accent }}>.</Copy></Copy></View>}
+      {back ? <Copy accessibilityRole="header" style={s.navTitle}>{title}</Copy> : <View style={s.fill} />}
+      {back && action}
+      {!back && <IconAction label="Abrir mi cuenta" onPress={() => router.push('/settings')}><UserCircleIcon size={28} weight="duotone" color={p.accent} /></IconAction>}
     </View>}
     <KeyboardAvoidingView style={s.fill} keyboardVerticalOffset={insets.top} behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}>
       {renderList && !loading && !error && !needsImport ? renderList(<View style={{ gap: hubSpace.large }}>{heading}{warning && <Copy accessibilityLiveRegion="polite" muted style={hubType.metadata}>{warning}</Copy>}</View>) : <ScrollView ref={scrollRef} onLayout={revealFocusedField} onFocus={revealFocusedField} onScroll={(event) => { scrollY.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} scrollEnabled={scrollEnabled} keyboardShouldPersistTaps="handled" contentContainerStyle={[s.content, wide && { maxWidth: hubWidths.content }]} showsVerticalScrollIndicator={false}>
@@ -116,9 +118,9 @@ export function Screen({ title, subtitle, children, back, action, avatar = false
 export function Section({ title, trailing }: { title: string; trailing?: ReactNode }) {
   return <View style={s.section}><Copy accessibilityRole="header" style={s.sectionTitle}>{title}</Copy>{trailing}</View>;
 }
-export function Surface({ children }: { children: ReactNode }) {
+export function Surface({ children, tone }: { children: ReactNode; tone?: 'gift' }) {
   const p = usePalette();
-  return <View style={[s.surface, { backgroundColor: p.surface }]}>{children}</View>;
+  return <View style={[s.surface, { backgroundColor: tone === 'gift' ? p.peach : p.surface }]}>{children}</View>;
 }
 export function Privacy({ children = 'Solo tú puedes verlo' }: { children?: ReactNode }) {
   const p = usePalette();
@@ -131,7 +133,7 @@ export function Empty({ icon, title, description, action }: { icon: ReactNode; t
 export function CategoryIcon({ category, size = 24 }: { category: Category; size?: number }) {
   const p = usePalette();
   const Icon = { book: BookOpenIcon, movie: FilmSlateIcon, series: TelevisionIcon, product: ShoppingBagIcon, place: MapPinIcon }[category];
-  return <Icon size={size} color={p.accent} weight="duotone" />;
+  return <Icon size={size} color={category === 'product' ? p.peachText : category === 'place' ? p.sageText : p.muted} weight="duotone" />;
 }
 export function Chips({ value, onChange, all = false, recommendations = false }: { value: Category | 'all'; onChange: (value: Category | 'all') => void; all?: boolean; recommendations?: boolean }) {
   const p = usePalette();
@@ -145,7 +147,7 @@ export function Field({ label, error, trailing, inputRef, ...props }: TextInputP
   const [focused, setFocused] = useState(false);
   const [text, setText] = useState(props.defaultValue || '');
   const floating = focused || !!(props.value ?? text);
-  return <View style={{ gap: 8 }}>
+  return <View style={{ gap: 6 }}>
     <View>
       <TextInput ref={inputRef} accessibilityLabel={label} accessibilityHint={props.placeholder} placeholderTextColor={p.muted} selectionColor={p.accent} underlineColorAndroid="transparent" {...props}
         placeholder={floating ? props.placeholder : ''}
@@ -154,14 +156,16 @@ export function Field({ label, error, trailing, inputRef, ...props }: TextInputP
         onChangeText={value => { setText(value); props.onChangeText?.(value); }}
         style={[s.input, props.style, {
           fontFamily: isLoaded('SourceSans3-Regular') ? 'SourceSans3-Regular' : undefined,
-          backgroundColor: p.surface, color: p.text, borderColor: error ? p.danger : focused ? p.accent : p.line,
-          minHeight: (props.multiline ? 116 : 36) + 40 * fontScale,
-          paddingTop: 14 + 18 * fontScale, paddingBottom: 14, paddingRight: trailing ? 68 : 18,
+          backgroundColor: p.soft, color: p.text, borderColor: error ? p.danger : focused ? p.accent : p.inputBorder,
+          borderWidth: 0, borderBottomWidth: focused || error ? 2 : 0.5,
+          borderBottomLeftRadius: 4, borderBottomRightRadius: 4,
+          minHeight: (props.multiline ? 44 : 12) + 40 * fontScale,
+          lineHeight: 24, paddingTop: floating ? 8 + 14 * fontScale : 14, paddingBottom: floating ? 6 : 14, paddingRight: trailing ? 56 : 14,
         }, props.multiline && { textAlignVertical: 'top' }]} />
-      <View pointerEvents="none" style={{ position: 'absolute', left: 18, right: trailing ? 68 : 18, top: floating ? 9 : 18 + 7 * fontScale }}>
-        <Copy accessible={false} numberOfLines={1} style={{ fontSize: floating ? 12 : 16, lineHeight: floating ? 18 : 24, fontWeight: floating ? '600' : '400', color: error ? p.danger : focused ? p.accent : p.muted }}>{label}</Copy>
+      <View pointerEvents="none" style={{ position: 'absolute', left: 14, right: trailing ? 56 : 14, top: floating ? 5 : 14 }}>
+        <Copy accessible={false} numberOfLines={1} style={{ alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: 'transparent', fontSize: floating ? 11 : 16, lineHeight: floating ? 14 : 24, fontWeight: floating ? '600' : '400', color: error ? p.danger : focused ? p.accent : p.muted }}>{label}</Copy>
       </View>
-      {trailing && <View style={{ position: 'absolute', right: 8, top: 0, bottom: 0, justifyContent: 'center' }}>{trailing}</View>}
+      {trailing && <View style={{ position: 'absolute', right: 4, top: 0, bottom: 0, justifyContent: 'center' }}>{trailing}</View>}
     </View>
     {error && <Copy accessibilityRole="alert" style={{ color: p.danger, fontSize: 13 }}>{error}</Copy>}
   </View>;
@@ -186,5 +190,5 @@ export const s = StyleSheet.create({
   empty: { alignItems: 'center', gap: 14, paddingVertical: 22, paddingHorizontal: 12 }, emptyIcon: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 20, lineHeight: 27, fontWeight: '600', textAlign: 'center' }, emptyText: { fontSize: 14, lineHeight: 22, textAlign: 'center', maxWidth: 300 },
   chips: { gap: 8 }, chip: { borderWidth: 1, minHeight: 34, paddingVertical: 6, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 17 },
-  fieldLabel: { fontSize: 14, fontWeight: '600' }, input: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 18, minHeight: 76, fontSize: 16 },
+  fieldLabel: { fontSize: 14, fontWeight: '600' }, input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, minHeight: 52, fontSize: 16 },
 });

@@ -69,12 +69,7 @@ export default function CalendarScreen() {
         </View>;
 
   return <GestureHandlerRootView style={{ flex: 1 }}><Screen wide title="Tu calendario" subtitle="Haz sitio a lo que te apetece." action={<TextAction onPress={() => selectDate(today)}>Hoy</TextAction>}>
-    <TextAction onPress={() => router.push('/(tabs)/friends')}>Ver disponibilidad de mi grupo</TextAction>
-    {agenda.next && <Pressable accessibilityRole="button" accessibilityLabel={'Ver próximo plan: ' + agenda.next.events[0].title + ', ' + agenda.next.date} onPress={() => selectDate(agenda.next!.date)} style={({ pressed }) => ({ backgroundColor: p.sage, borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 16, opacity: pressed ? 0.75 : 1 })}>
-      <View style={{ alignItems: 'center', minWidth: 44 }}><Copy style={{ color: p.sageText, fontSize: 30, lineHeight: 34, fontWeight: '700' }}>{Number(agenda.next.date.slice(-2))}</Copy><Copy style={{ color: p.sageText, fontSize: 12, lineHeight: 18, textTransform: 'uppercase' }}>{monthLabel(agenda.next.date)}</Copy></View>
-      <View style={{ flex: 1, gap: 4 }}><Copy style={{ color: p.sageText, fontSize: 12, lineHeight: 18 }}>{calendarCountdown(agenda.next.date, today)}</Copy><Copy style={{ color: p.sageText, fontSize: 16, lineHeight: 22, fontWeight: '600' }}>{agenda.next.events[0].title}</Copy>{agenda.next.events.length > 1 && <Copy style={{ color: p.sageText, fontSize: 12, lineHeight: 18 }}>+{agenda.next.events.length - 1} ese día</Copy>}</View>
-      <ArrowRightIcon size={20} color={p.sageText} />
-    </Pressable>}
+
 
     <Chips value={category} onChange={setCategory} all recommendations />
 
@@ -102,6 +97,11 @@ export default function CalendarScreen() {
 
       <View style={{ flex: sideBySide ? 1 : undefined, width: sideBySide ? undefined : '100%', gap: 24 }}>
         {dayAgenda}
+    {agenda.next && <Pressable accessibilityRole="button" accessibilityLabel={'Ver próximo plan: ' + agenda.next.events[0].title + ', ' + agenda.next.date} onPress={() => selectDate(agenda.next!.date)} style={({ pressed }) => ({ backgroundColor: p.sage, borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 16, opacity: pressed ? 0.75 : 1 })}>
+      <View style={{ alignItems: 'center', minWidth: 44 }}><Copy style={{ color: p.sageText, fontSize: 30, lineHeight: 34, fontWeight: '700' }}>{Number(agenda.next.date.slice(-2))}</Copy><Copy style={{ color: p.sageText, fontSize: 12, lineHeight: 18, textTransform: 'uppercase' }}>{monthLabel(agenda.next.date)}</Copy></View>
+      <View style={{ flex: 1, gap: 4 }}><Copy style={{ color: p.sageText, fontSize: 12, lineHeight: 18 }}>{calendarCountdown(agenda.next.date, today)}</Copy><Copy style={{ color: p.sageText, fontSize: 16, lineHeight: 22, fontWeight: '600' }}>{agenda.next.events[0].title}</Copy>{agenda.next.events.length > 1 && <Copy style={{ color: p.sageText, fontSize: 12, lineHeight: 18 }}>+{agenda.next.events.length - 1} ese día</Copy>}</View>
+      <ArrowRightIcon size={20} color={p.sageText} />
+    </Pressable>}
         {!!agenda.upcoming.length && <View style={{ gap: 16 }}>
           <Section title="Lo próximo" />
           {agenda.upcoming.map((group) => <View key={group.date} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
@@ -110,6 +110,11 @@ export default function CalendarScreen() {
           </View>)}
         </View>}
       </View>
+    </View>
+    <View style={{ borderTopWidth: 1, borderColor: p.line, paddingTop: 16, gap: 4 }}>
+      <Section title="Para quedar en grupo" />
+      <Copy muted>Consulta cuándo coincidís sin compartir tus eventos personales.</Copy>
+      <TextAction onPress={() => router.push('/(tabs)/friends')}>Ver disponibilidad del grupo</TextAction>
     </View>
   </Screen></GestureHandlerRootView>;
 }

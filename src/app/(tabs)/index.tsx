@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
-import { ArrowRightIcon, BookOpenIcon } from '@/components/hub-icons';
+import { BookOpenIcon } from '@/components/hub-icons';
 import { AddAction, CategoryIcon, Copy, Empty, Screen, Section, TextAction } from '@/components/hub-ui';
 import { RecommendationCard } from '@/components/recommendation-card';
 import { MomentSong } from '@/components/moment-song';
@@ -19,11 +19,7 @@ export default function HomeScreen() {
   const feed = useDiscoveryFeed(category);
   const options = [{ value: 'all' as const, label: 'Todo' }, ...recommendationCategories];
   const header = <View style={{ gap: 20 }}>
-    <MomentSong />
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-      <TextAction onPress={() => router.push('/groups')}>Mis grupos</TextAction>
-      <TextAction onPress={() => router.push('/calendar')} icon={<ArrowRightIcon size={16} color={p.accent} />}>Próximos planes</TextAction>
-    </View>
+    {state.song && <MomentSong />}
     <View style={{ gap: 4 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
         {options.map(option => <Pressable key={option.value} accessibilityRole="tab" accessibilityState={{ selected: category === option.value }} onPress={() => setCategory(option.value)}

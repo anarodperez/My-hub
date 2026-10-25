@@ -169,12 +169,12 @@ export function createHubRepository(client: SupabaseClient, accountId: string) {
       if (interested) await checked(client.from('group_post_responses').upsert({ post_id: postId, owner_id: accountId }, { onConflict: 'post_id,owner_id', ignoreDuplicates: true }));
       else await checked(client.from('group_post_responses').delete().eq('post_id', postId).eq('owner_id', accountId));
     },
-    async setGroupGiftStatus(id: string, status: 'open' | 'delivered', revision: number) {
+    async setGroupGiftStatus(id: string, status: 'open' | 'reserved' | 'delivered', revision: number, recipient?: string) {
       uuid(id);
-      if (!['open', 'delivered'].includes(status) || !Number.isSafeInteger(revision) || revision < 1) throw new Error('Estado no válido.');
-      const row = await checked<GroupPostRow | null>(client.from('group_posts').update({ status }).eq('id', id).eq('owner_id', accountId).eq('kind', 'gift').eq('revision', revision).select('*,group_post_responses(post_id,owner_id)').maybeSingle());
-      if (!row) throw new Error('El regalo ha cambiado o ya no está disponible. Recarga.');
-      return row;
+      if (!['open', 'reserved', 'delivered'].includes(status) || !Number.isSafeInteger(revision) || revision < 1) throw new Error('Estado no válido.');
+      if (status === 'reserved' && !recipient) throw new Error('Elige una destinataria.');
+      if (status !== 'reserved' && recipient) throw new Error('Destinataria no válida para este estado.');
+      return rpc<void>('set_group_gift_state', { target: id, next_status: status, expected_revision: revision, recipient: recipient ? uuid(recipient) : null });
     },
     async deleteGroupPost(id: string, revision: number) {
       uuid(id);
