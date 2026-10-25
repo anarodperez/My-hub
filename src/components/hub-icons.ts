@@ -21,6 +21,7 @@ export { StarIcon } from 'phosphor-react-native/src/icons/Star';
 export { StarHalfIcon } from 'phosphor-react-native/src/icons/StarHalf';
 export { MinusIcon } from 'phosphor-react-native/src/icons/Minus';
 export { CheckIcon } from 'phosphor-react-native/src/icons/Check';
+export { ChatCircleIcon } from 'phosphor-react-native/src/icons/ChatCircle';
 export { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
 export { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 export { SunIcon } from 'phosphor-react-native/src/icons/Sun';

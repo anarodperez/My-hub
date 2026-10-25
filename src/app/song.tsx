@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { CoverPicker } from '@/components/cover-picker';
-import { Action, Copy, Field, Screen, TextAction, showError } from '@/components/hub-ui';
+import { Copy, Field, Screen, TextAction, showError, SaveAction } from '@/components/hub-ui';
 import { discardCover, persistCover } from '@/features/hub/covers';
 import { isWebLink, type HubState } from '@/features/hub/model';
 import { useHub } from '@/features/hub/provider';
@@ -52,7 +52,7 @@ function SongEditor({ existing }: { existing?: HubState['song'] }) {
     <Field label="Artista" value={artist} onChangeText={setArtist} maxLength={150} error={errors.artist} />
     <Field label="Enlace para escuchar (opcional)" placeholder="Enlace de Spotify, YouTube…" value={link} onChangeText={setLink} keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2000} error={errors.link} />
     <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />
-    <Action disabled={busy || picking} onPress={() => { void save(); }}>{busy ? 'Guardando…' : 'Guardar canción'}</Action>
+    <SaveAction busy={busy} disabled={picking} onPress={() => { void save(); }}>Guardar canción</SaveAction>
     {existing && <TextAction danger disabled={busy || picking} onPress={() => { void remove(); }}>Quitar de Inicio</TextAction>}
   </Screen>;
 }

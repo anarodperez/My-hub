@@ -20,7 +20,13 @@ function Navigation() {
         <Stack.Screen name="compose" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="wish" />
+        <Stack.Screen name="review" />
         <Stack.Screen name="song" />
+        <Stack.Screen name="discovery/[id]" />
+        <Stack.Screen name="groups" />
+        <Stack.Screen name="group/[id]" />
+        <Stack.Screen name="group-space" />
+        <Stack.Screen name="group-post" />
       </Stack.Protected>
       <Stack.Screen name="account" />
     </Stack>

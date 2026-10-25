@@ -1,25 +1,26 @@
 export type Category = 'book' | 'movie' | 'series' | 'product' | 'place';
 export type ThemePreference = 'system' | 'light' | 'dark';
-export type Recommendation = { id: string; title: string; category: Category; opinion: string; rating: number; coverUrl: string; createdAt: string; priceCents?: number; location?: string; link?: string; sample?: boolean };
-export type CalendarEvent = { id: string; title: string; category: Category; date: string };
-export type Wish = { id: string; title: string; category: Category; coverUrl: string; link?: string; completed: boolean };
-export type Subscription = { id: string; name: string; amountCents: number; frequency: 'monthly' | 'yearly'; nextDate: string };
+export type CloudMeta = { revision?: number; coverPath?: string; ownerId?: string; visibility?: 'private' | 'public' | 'group'; groupId?: string; commentCount?: number; authorName?: string };
+export type Recommendation = CloudMeta & { id: string; title: string; category: Category; opinion: string; rating: number; coverUrl: string; createdAt: string; priceCents?: number; location?: string; link?: string; sample?: boolean; commentPreview?: { id: string; body: string; authorName: string }[] };
+export type CalendarEvent = CloudMeta & { id: string; title: string; category: Category; date: string };
+export type Wish = CloudMeta & { id: string; title: string; category: Category; coverUrl: string; link?: string; completed: boolean };
 export type HubState = {
   version: 1;
   songExampleAdded?: boolean;
   starsideCoverUpdated?: boolean;
   romantasyReleasesAdded?: boolean;
-  song?: { title: string; artist: string; coverUrl: string; link?: string };
+  song?: CloudMeta & { title: string; artist: string; coverUrl: string; link?: string };
   examplesAdded?: boolean;
+  previewExamplesAdded?: boolean;
+  previewPhotosAdded?: boolean;
   wishes?: Wish[];
   wishlistVisibility?: 'private' | 'public';
   recommendations: Recommendation[];
   saved: { recommendationId: string; status: 'pending' | 'finished' }[];
   events: CalendarEvent[];
-  subscriptions: Subscription[];
   preferences: { name: string; theme: ThemePreference; avatarUri?: string };
 };
-export const emptyState: HubState = { version: 1, recommendations: [], saved: [], events: [], subscriptions: [], preferences: { name: '', theme: 'system' } };
+export const emptyState: HubState = { version: 1, recommendations: [], saved: [], events: [], preferences: { name: '', theme: 'system' } };
 export function toggleSaved(state: HubState, recommendationId: string): HubState {
   const exists = state.saved.some((item) => item.recommendationId === recommendationId);
   return { ...state, saved: exists ? state.saved.filter((item) => item.recommendationId !== recommendationId) : [...state.saved, { recommendationId, status: 'pending' }] };
@@ -89,6 +90,8 @@ export function decodeState(raw: string | null): HubState {
   if (!record(value) || value.version !== 1 || (value.examplesAdded !== undefined && typeof value.examplesAdded !== 'boolean') || !record(value.preferences) || typeof value.preferences.name !== 'string' || !['system', 'light', 'dark'].includes(String(value.preferences.theme)) ||
     (value.songExampleAdded !== undefined && typeof value.songExampleAdded !== 'boolean') ||
     (value.starsideCoverUpdated !== undefined && typeof value.starsideCoverUpdated !== 'boolean') ||
+    (value.previewPhotosAdded !== undefined && typeof value.previewPhotosAdded !== 'boolean') ||
+    (value.previewExamplesAdded !== undefined && typeof value.previewExamplesAdded !== 'boolean') ||
     (value.romantasyReleasesAdded !== undefined && typeof value.romantasyReleasesAdded !== 'boolean') ||
     (value.preferences.avatarUri !== undefined && typeof value.preferences.avatarUri !== 'string') ||
     (value.song !== undefined && (!record(value.song) || typeof value.song.title !== 'string' || !value.song.title.trim() || typeof value.song.artist !== 'string' || !value.song.artist.trim() || typeof value.song.coverUrl !== 'string' || (value.song.link !== undefined && (typeof value.song.link !== 'string' || !isWebLink(value.song.link))))) ||
@@ -96,7 +99,7 @@ export function decodeState(raw: string | null): HubState {
     (value.wishes !== undefined && (!Array.isArray(value.wishes) || !value.wishes.every((w) => record(w) && typeof w.id === 'string' && typeof w.title === 'string' && categoryValid(w.category) && typeof w.coverUrl === 'string' && typeof w.completed === 'boolean' && (w.link === undefined || (typeof w.link === 'string' && isWebLink(w.link)))))) ||
     !Array.isArray(value.recommendations) || !value.recommendations.every((r) => record(r) && typeof r.id === 'string' && typeof r.title === 'string' && categoryValid(r.category) && typeof r.opinion === 'string' && isRating(r.rating) && typeof r.coverUrl === 'string' && typeof r.createdAt === 'string' && recommendationDetailsValid(r)) ||
     !Array.isArray(value.events) || !value.events.every((e) => record(e) && typeof e.id === 'string' && typeof e.title === 'string' && categoryValid(e.category) && typeof e.date === 'string' && isLocalDate(e.date)) ||
-    !Array.isArray(value.subscriptions) || !value.subscriptions.every((s) => record(s) && typeof s.id === 'string' && typeof s.name === 'string' && Number.isSafeInteger(s.amountCents) && Number(s.amountCents) >= 0 && ['monthly', 'yearly'].includes(String(s.frequency)) && typeof s.nextDate === 'string' && isLocalDate(s.nextDate)) ||
     !Array.isArray(value.saved) || !value.saved.every((s) => record(s) && typeof s.recommendationId === 'string' && ['pending', 'finished'].includes(String(s.status)))) throw new Error('No hemos podido leer tus datos. No se ha borrado nada.');
+  delete value.subscriptions;
   return value as HubState;
 }

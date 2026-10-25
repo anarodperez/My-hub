@@ -21,3 +21,14 @@ test('una wishlist vacía no tiene elementos ni recuentos', () => {
   assert.deepEqual(selected.wishes, []);
   assert.deepEqual(selected.recommendations, []);
 });
+
+const { pickSurprise } = require('../src/features/hub/wishlist.ts');
+test('sorteo vacio, unico y sin repeticion consecutiva', () => {
+ assert.equal(pickSurprise([], '', () => 0), undefined);
+ const options = [{ key: 'wish-a' }, { key: 'saved-a' }, { key: 'wish-b' }];
+ assert.equal(pickSurprise(options, '', () => 0).key, 'wish-a');
+ assert.equal(pickSurprise(options, 'wish-a', () => 0).key, 'saved-a');
+ assert.equal(pickSurprise(options, 'wish-a', () => 0.999).key, 'wish-b');
+ assert.equal(pickSurprise([options[0]], 'wish-a', () => 0).key, 'wish-a');
+ assert.equal(options.length, 3);
+});

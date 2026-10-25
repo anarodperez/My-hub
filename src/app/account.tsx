@@ -43,7 +43,6 @@ function AccountForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [focusedField, setFocusedField] = useState<'email' | 'password' | 'confirmation' | null>(null);
   const [confirmation, setConfirmation] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -264,10 +263,7 @@ function AccountForm() {
                 keyboardType="email-address"
                 autoComplete="email"
                 placeholder="tu@correo.com"
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
                 selectionColor={p.accent}
-                style={{ minHeight: 56, borderColor: focusedField === 'email' ? p.accent : p.line }}
                 editable={
                   !busy &&
                   shownMode !== "confirm" &&
@@ -284,10 +280,7 @@ function AccountForm() {
                 onChangeText={setPassword}
                 secureTextEntry={!passwordVisible}
                 trailing={<IconAction label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'} onPress={() => setPasswordVisible((visible) => !visible)}>{passwordVisible ? <EyeSlashIcon size={21} color={p.muted} /> : <EyeIcon size={21} color={p.muted} />}</IconAction>}
-                onFocus={() => setFocusedField('password')}
-                onBlur={() => setFocusedField(null)}
                 selectionColor={p.accent}
-                style={{ minHeight: 56, borderColor: focusedField === 'password' ? p.accent : p.line }}
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholder={shownMode === "login" ? "Tu contraseña" : "Al menos 6 caracteres"}
@@ -310,10 +303,7 @@ function AccountForm() {
                 editable={!busy}
                 autoComplete="new-password"
                 placeholder="Repite tu contraseña"
-                onFocus={() => setFocusedField('confirmation')}
-                onBlur={() => setFocusedField(null)}
                 selectionColor={p.accent}
-                style={{ minHeight: 56, borderColor: focusedField === 'confirmation' ? p.accent : p.line }}
               />
               </View>
             )}

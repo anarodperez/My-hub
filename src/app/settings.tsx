@@ -1,11 +1,12 @@
 import { router, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Platform, Pressable, View } from 'react-native';
-import { BookmarkSimpleIcon, CalendarBlankIcon, CheckIcon, DeviceMobileIcon, MoonIcon, PencilSimpleIcon, SunIcon } from '@/components/hub-icons';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
+import { BookmarkSimpleIcon, CalendarBlankIcon, CheckIcon, DeviceMobileIcon, MoonIcon, PencilSimpleIcon, SunIcon, TrashIcon, UserCircleIcon, CaretRightIcon, LockSimpleIcon, XIcon } from '@/components/hub-icons';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { discardCover, persistCover } from '@/features/hub/covers';
-import { Action, Copy, Field, Privacy, Screen, Section, Surface, TextAction, s, showError } from '@/components/hub-ui';
+import { Copy, Field, IconAction, Screen, Section, showError, SaveAction } from '@/components/hub-ui';
 import { type ThemePreference } from '@/features/hub/model';
 import { useHub, usePalette } from '@/features/hub/provider';
 
@@ -46,10 +47,10 @@ function ProfileEditor() {
     } finally { setPhotoBusy(false); }
   };
   const pending = (state.wishes || []).filter((wish) => !wish.completed).length + state.saved.filter((item) => item.status === 'pending').length;
-  const themes: { value: ThemePreference; label: string; description: string; Icon: typeof SunIcon; background: string; surface: string; accent: string }[] = [
-    { value: 'system', label: 'Automático', description: 'Sigue el tema de tu móvil.', Icon: DeviceMobileIcon, background: p.background, surface: p.surface, accent: p.accent },
-    { value: 'light', label: 'Claro', description: 'Crema cálida y ciruela suave.', Icon: SunIcon, background: '#FAF7F2', surface: '#FFFDFA', accent: '#705080' },
-    { value: 'dark', label: 'Oscuro', description: 'Ciruela profunda y lavanda.', Icon: MoonIcon, background: '#19161D', surface: '#25212B', accent: '#C4A7DC' },
+  const themes: { value: ThemePreference; label: string; description: string; Icon: typeof SunIcon }[] = [
+    { value: 'system', label: 'Automático', description: 'Sigue el tema de tu móvil.', Icon: DeviceMobileIcon },
+    { value: 'light', label: 'Claro', description: 'Crema cálida y ciruela suave.', Icon: SunIcon },
+    { value: 'dark', label: 'Oscuro', description: 'Ciruela profunda y lavanda.', Icon: MoonIcon },
   ];
   const selectedTheme = themes.find((theme) => theme.value === state.preferences.theme)!;
   const saveName = async () => {
@@ -61,32 +62,67 @@ function ProfileEditor() {
     } catch { showError(); } finally { setBusy(false); }
   };
   return <Screen back title="Mi perfil">
-    <TextAction onPress={() => router.push('/account')}>Mi cuenta</TextAction>
-    <View style={{ alignItems: 'center', gap: 8, paddingTop: 4, paddingBottom: 4 }}>
-      <Pressable disabled={photoBusy} accessibilityRole="button" accessibilityLabel={state.preferences.avatarUri ? 'Cambiar foto de perfil' : 'Añadir foto de perfil'} onPress={() => { void changePhoto(); }} style={{ marginBottom: 4, opacity: photoBusy ? 0.5 : 1 }}><ProfileAvatar size={76} /><View style={{ position: 'absolute', right: -2, bottom: 0, width: 25, height: 25, borderRadius: 13, backgroundColor: p.accent, borderWidth: 2, borderColor: p.background, alignItems: 'center', justifyContent: 'center' }}><PencilSimpleIcon size={12} color={p.onAccent} /></View></Pressable>
-      <View><TextAction disabled={photoBusy} onPress={() => { void changePhoto(); }}>{photoBusy ? 'Guardando foto…' : state.preferences.avatarUri ? 'Cambiar foto' : 'Añadir foto'}</TextAction></View>
-      {state.preferences.avatarUri && <View><TextAction disabled={photoBusy} danger onPress={() => { void changePhoto(true); }}>Quitar foto</TextAction></View>}
-      {!!photoError && <Copy accessibilityRole="alert" style={{ color: p.danger, fontSize: 12, textAlign: 'center' }}>{photoError}</Copy>}
-      <Copy accessibilityRole="header" style={{ fontSize: 26, lineHeight: 33, fontWeight: '700', textAlign: 'center' }}>{state.preferences.name || 'Tu rincón en My Hub'}</Copy>
-      <Copy muted style={{ fontSize: 13, lineHeight: 20, textAlign: 'center' }}>Historias, descubrimientos y cosas que te gustan.</Copy>
-      <View><TextAction icon={<PencilSimpleIcon size={15} color={p.accent} />} onPress={() => { setEditing(!editing); setSaved(false); }}> {editing ? 'Cerrar edición' : 'Editar nombre'}</TextAction></View>
-      {saved && <Copy accessibilityLiveRegion="polite" style={{ color: p.sageText, fontSize: 12 }}>Nombre guardado</Copy>}
+    <View style={v.identity}>
+      <View style={{ padding: 7, borderRadius: 70, borderWidth: 1, borderColor: p.line }}>
+        <Pressable disabled={photoBusy} accessibilityRole="button" accessibilityLabel={state.preferences.avatarUri ? 'Cambiar foto de perfil' : 'Añadir foto de perfil'} accessibilityState={{ disabled: photoBusy, busy: photoBusy }} onPress={() => { void changePhoto(); }} style={({ pressed }) => ({ opacity: photoBusy ? 0.5 : pressed ? 0.7 : 1 })}>
+          <ProfileAvatar size={108} />
+          <View style={[v.photoEdit, { backgroundColor: p.accent, borderColor: p.background }]}>{photoBusy ? <ActivityIndicator size="small" color={p.onAccent} /> : <PencilSimpleIcon size={15} color={p.onAccent} />}</View>
+        </Pressable>
+        {state.preferences.avatarUri && <View style={{ position: 'absolute', left: -14, bottom: -6, backgroundColor: p.background, borderRadius: 24 }}><IconAction disabled={photoBusy} label="Quitar foto de perfil" onPress={() => { void changePhoto(true); }}><TrashIcon size={18} color={p.muted} /></IconAction></View>}
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, maxWidth: '100%' }}>
+        <Copy accessibilityRole="header" style={[v.name, { flexShrink: 1 }]}>{state.preferences.name || 'Tu rincón en My Hub'}</Copy>
+        <IconAction disabled={busy} label={editing ? 'Cerrar edición del nombre' : 'Editar nombre'} onPress={() => { setName(state.preferences.name); setEditing(!editing); setSaved(false); }}>{editing ? <XIcon size={20} color={p.accent} /> : <PencilSimpleIcon size={20} color={p.accent} />}</IconAction>
+      </View>
+      <Copy muted style={v.intro}>Un espacio para todo lo que te gusta.</Copy>
+      {!!photoError && <Copy accessibilityRole="alert" style={{ color: p.danger, fontSize: 13, textAlign: 'center' }}>{photoError}</Copy>}
+      {saved && <View style={v.inline}><CheckIcon size={15} color={p.sageText} /><Copy accessibilityLiveRegion="polite" style={{ color: p.sageText, fontSize: 13 }}>Nombre guardado</Copy></View>}
     </View>
-    {editing && <Surface><Field label="Tu nombre" value={name} onChangeText={(value) => { setName(value); setSaved(false); }} placeholder="¿Cómo te llamas?" maxLength={40} /><Action disabled={busy || name.trim() === state.preferences.name} onPress={() => { void saveName(); }}>{busy ? 'Guardando…' : 'Guardar cambios'}</Action></Surface>}
-    <View style={{ flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, borderColor: p.line, paddingVertical: 12 }}>
-      {[{ label: 'Publicaciones', count: state.recommendations.filter((item) => !item.sample).length, route: '/' as const }, { label: 'Deseos', count: pending, route: '/library' as const }, { label: 'Eventos', count: state.events.length, route: '/calendar' as const }].map((item, index) => <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={`${item.count} ${item.label.toLowerCase()}. Ver lista`} onPress={() => router.push(item.route as Href)} style={({ pressed }) => ({ flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: 2, borderLeftWidth: index ? 1 : 0, borderColor: p.line, opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 22, lineHeight: 28, fontWeight: '600' }}>{item.count}</Copy><Copy muted style={{ fontSize: 11, lineHeight: 17, textAlign: 'center' }}>{item.label}</Copy></Pressable>)}
+    {editing && <View style={[v.editor, { backgroundColor: p.surface, borderColor: p.line }]}>
+      <Field label="Tu nombre" value={name} onChangeText={(value) => { setName(value); setSaved(false); }} placeholder="¿Cómo te llamas?" maxLength={40} editable={!busy} />
+      <SaveAction busy={busy} disabled={name.trim() === state.preferences.name} onPress={() => { void saveName(); }} />
+    </View>}
+    <View style={[v.stats, { borderColor: p.line }]}>
+      {[{ label: 'Publicaciones', count: state.recommendations.filter((item) => !item.sample).length, route: '/' as const }, { label: 'Deseos', count: pending, route: '/library' as const }, { label: 'Eventos', count: state.events.length, route: '/calendar' as const }].map((item, index) => <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={`${item.count} ${item.label.toLowerCase()}. Ver lista`} onPress={() => router.push(item.route as Href)} style={({ pressed }) => ({ flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 4, borderLeftWidth: index ? 1 : 0, borderColor: p.line, opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 24, lineHeight: 30, fontWeight: '600' }}>{item.count}</Copy><Copy muted style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>{item.label}</Copy></Pressable>)}
     </View>
-    <View style={{ gap: 12 }}>
-      <Section title="A tu luz" />
-      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 10 }}>{themes.map(({ value, label, Icon, background, surface, accent }) => {
+    <View style={v.section}>
+      <Section title="Tu espacio" />
+      <View style={{ backgroundColor: p.surface, borderRadius: 16, overflow: 'hidden' }}>
+        {[{ title: 'Mi cuenta', detail: 'Acceso y seguridad', route: '/account' as const, Icon: UserCircleIcon }, { title: 'Mis grupos', detail: 'Tus círculos de confianza', route: '/groups' as const, Icon: UsersThreeIcon }].map(({ title, detail, route, Icon }, index) => <Pressable key={route} accessibilityRole="button" accessibilityLabel={`${title}. ${detail}`} onPress={() => router.push(route)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14, minHeight: 78, backgroundColor: pressed ? p.soft : 'transparent', borderTopWidth: index ? 1 : 0, borderTopColor: p.line })}>
+          <Icon size={24} color={p.accent} weight="duotone" />
+          <View style={{ flex: 1, gap: 3 }}><Copy style={{ fontSize: 16, fontWeight: '600' }}>{title}</Copy><Copy muted style={{ fontSize: 13, lineHeight: 19 }}>{detail}</Copy></View>
+          <CaretRightIcon size={18} color={p.muted} />
+        </Pressable>)}
+      </View>
+    </View>
+    <View style={v.section}>
+      <Section title="Apariencia" />
+      <View accessibilityRole="radiogroup" accessibilityLabel="Tema de la app" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{themes.map(({ value, label, Icon }) => {
         const selected = state.preferences.theme === value;
-        return <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => update((previous) => ({ ...previous, preferences: { ...previous.preferences, theme: value } })).catch(showError)} style={({ pressed }) => ({ flex: 1, borderRadius: 12, padding: 7, borderWidth: 1, borderColor: selected ? p.accent : p.line, backgroundColor: selected ? p.soft : p.surface, gap: 8, opacity: pressed ? 0.6 : 1 })}>
-          <View accessible={false} style={{ height: 76, backgroundColor: background, borderRadius: 7, padding: 8, gap: 6 }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: accent }} /><View style={{ width: 23, height: 3, borderRadius: 2, backgroundColor: accent, opacity: 0.5 }} /></View><View style={{ flex: 1, backgroundColor: surface, borderRadius: 4, padding: 6, gap: 4 }}><View style={{ width: '70%', height: 4, borderRadius: 2, backgroundColor: accent, opacity: 0.6 }} /><View style={{ width: '90%', height: 3, borderRadius: 2, backgroundColor: accent, opacity: 0.2 }} /></View></View>
-          <View style={{ alignItems: 'center', gap: 4, paddingBottom: 5 }}><Icon size={17} color={selected ? p.accent : p.muted} weight="duotone" /><Copy style={{ fontSize: 12, lineHeight: 18, fontWeight: selected ? '600' : '400', textAlign: 'center', color: selected ? p.accent : p.text }}>{label}</Copy>{selected && <CheckIcon size={12} color={p.accent} weight="bold" />}</View>
+        return <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => update((previous) => ({ ...previous, preferences: { ...previous.preferences, theme: value } })).catch(showError)} style={({ pressed }) => ({ flex: 1, minWidth: 84, minHeight: 92, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 6, borderWidth: 1, borderColor: selected ? p.accent : p.line, backgroundColor: selected ? p.soft : p.surface, alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.65 : 1 })}>
+          <Icon size={24} color={selected ? p.accent : p.muted} weight={selected ? 'fill' : 'regular'} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, flexWrap: 'wrap' }}><Copy style={{ fontSize: 13, lineHeight: 19, fontWeight: selected ? '600' : '400', color: selected ? p.accent : p.text }}>{label}</Copy>{selected && <CheckIcon size={12} color={p.accent} weight="bold" />}</View>
         </Pressable>;
       })}</View>
-      <Copy muted accessibilityLiveRegion="polite" style={{ fontSize: 12, lineHeight: 18 }}>{selectedTheme.description}</Copy>
+      <Copy muted accessibilityLiveRegion="polite" style={{ fontSize: 13, lineHeight: 20 }}>{selectedTheme.description}</Copy>
     </View>
-    <View style={{ gap: 12 }}><Section title="Solo para ti" /><Surface><Privacy>Guardado en este dispositivo</Privacy><View style={s.inline}><CalendarBlankIcon size={19} color={p.muted} /><Copy style={{ fontSize: 13, flex: 1 }}>Calendario y suscripciones privados</Copy></View><View style={s.inline}><BookmarkSimpleIcon size={19} color={p.muted} /><Copy style={{ fontSize: 13, flex: 1 }}>Tú eliges la visibilidad de tu wishlist</Copy></View><Copy muted style={{ fontSize: 12, lineHeight: 19 }}>Las cuentas y los grupos de amigos aún no están conectados. Por ahora, tu contenido permanece en tu móvil.</Copy></Surface></View>
+    <View style={[v.privacy, { borderColor: p.line }]}>
+      <LockSimpleIcon size={22} color={p.sageText} />
+      <View style={{ flex: 1, gap: 6 }}><Copy style={{ fontSize: 15, fontWeight: '600' }}>Lo personal se queda contigo</Copy><Copy muted style={{ fontSize: 13, lineHeight: 20 }}>Tu wishlist y calendario personal son privados y se guardan en tu cuenta.</Copy>
+        <View style={v.inline}><BookmarkSimpleIcon size={15} color={p.muted} /><CalendarBlankIcon size={15} color={p.muted} /><Copy muted style={{ fontSize: 12 }}>Solo tú tienes acceso</Copy></View>
+      </View>
+    </View>
   </Screen>;
 }
+
+const v = StyleSheet.create({
+  identity: { alignItems: 'center', gap: 10, paddingTop: 10 },
+  photoEdit: { position: 'absolute', right: -1, bottom: 1, width: 32, height: 32, borderRadius: 16, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  name: { fontSize: 30, lineHeight: 38, fontWeight: '700', textAlign: 'center' },
+  intro: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  inline: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  editor: { padding: 18, gap: 16, borderWidth: 1, borderRadius: 16 },
+  stats: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 16 },
+  section: { gap: 14, marginTop: 8 },
+  privacy: { flexDirection: 'row', gap: 12, borderTopWidth: 1, paddingTop: 24, marginTop: 8 },
+});
