@@ -50,8 +50,17 @@ test('lecturas de grupo filtran grupo, mes y tipo; limitan publicaciones por pag
   assert.ok(client.calls.some(c => c[0] === 'range' && c[1] === 30 && c[2] === 59));
 });
 test('entregar y borrar no anuncian exito si la fila ya no es propia o cambio', async () => {
-  await assert.rejects(createHubRepository(db({ data: null, error: null }), owner).setGroupGiftStatus(group, 'delivered', 1), /cambiado|disponible/i);
+  await assert.rejects(createHubRepository(db({ data: null, error: { message: 'El regalo ha cambiado' } }), owner).setGroupGiftStatus(group, 'delivered', 1), /cambiado/i);
   await assert.rejects(createHubRepository(db(), owner).deleteGroupPost(group, 1), /cambiado|disponible/i);
+});
+test('reservar usa RPC con revision y destinataria validada', async () => {
+  const client = db(); const repo = createHubRepository(client, owner);
+  await assert.rejects(repo.setGroupGiftStatus(group, 'reserved', 1), /destinataria/i);
+  await assert.rejects(repo.setGroupGiftStatus(group, 'reserved', 1, 'invalid'), /identificador/i);
+  await assert.rejects(repo.setGroupGiftStatus(group, 'open', 1, owner), /destinataria/i);
+  assert.equal(client.calls.length, 0);
+  await repo.setGroupGiftStatus(group, 'reserved', 2, owner);
+  assert.deepEqual(client.calls[0], ['rpc', 'set_group_gift_state', { target: group, next_status: 'reserved', expected_revision: 2, recipient: owner }]);
 });
 test('reintentar una publicacion ya creada recupera la misma fila y rechaza cambios', async () => {
   const input = { newId: group, group_id: group, kind: 'plan', title: 'Cine', description: '', event_date: null, cover_path: '' };

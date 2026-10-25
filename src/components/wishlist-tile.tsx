@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { AccessibilityInfo, Pressable, View } from 'react-native';
-import { CheckIcon, ArrowRightIcon } from './hub-icons';
+import { CheckIcon, ArrowSquareOutIcon, ArrowCounterClockwiseIcon } from './hub-icons';
 import { CategoryIcon, Copy, TextAction, showError } from './hub-ui';
 import { ExternalLink } from './external-link';
 import { recommendationCategories, type Recommendation, type Wish } from '@/features/hub/model';
@@ -37,10 +37,12 @@ export function WishlistTile({ item, completed, wish = false, onComplete }: { it
     </View>
     <View style={{ paddingHorizontal: 10, paddingBottom: 10, marginTop: 'auto', gap: 4 }}>
       <TextAction disabled={busy} onPress={() => router.push({ pathname: '/review', params: { id: item.id, saved: wish ? '0' : '1' } })}>Terminar y valorar</TextAction>
-      <Pressable disabled={busy} accessibilityRole="button" accessibilityState={{ disabled: busy }} accessibilityLabel={completed ? `Volver a guardar ${item.title}` : `Marcar ${item.title} como cumplido`} onPress={() => { void complete(); }} style={({ pressed }) => ({ minHeight: 48, flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 8, paddingHorizontal: 4, borderRadius: 8, backgroundColor: pressed ? p.soft : 'transparent', opacity: busy ? 0.5 : pressed ? 0.7 : 1 })}><View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 1, borderColor: completed ? p.sageText : p.line, backgroundColor: completed ? p.sage : 'transparent', alignItems: 'center', justifyContent: 'center' }}><CheckIcon size={12} color={completed ? p.sageText : p.muted} weight="bold" /></View><Copy style={{ flexShrink: 1, fontSize: 12, lineHeight: 17, fontWeight: '600', color: completed ? p.sageText : p.muted }}>{completed ? 'Deshacer' : 'Marcar hecho'}</Copy></Pressable>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Pressable disabled={busy} accessibilityRole="button" accessibilityState={{ disabled: busy }} accessibilityLabel={completed ? `Volver a guardar ${item.title}` : `Marcar ${item.title} como cumplido`} onPress={() => { void complete(); }} style={({ pressed }) => ({ minHeight: 48, minWidth: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: pressed ? p.soft : 'transparent', opacity: busy ? 0.5 : pressed ? 0.7 : 1 })}>{completed ? <ArrowCounterClockwiseIcon size={23} color={p.sageText} /> : <CheckIcon size={23} color={p.muted} />}</Pressable>
       {!!item.link && <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        {item.link ? <ExternalLink href={item.link as `https://${string}` | `http://${string}`} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Ver enlace de ${item.title}`} style={({ pressed }) => ({ minHeight: 48, flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 4, opacity: pressed ? 0.6 : 1 })}><Copy style={{ color: p.accent, fontSize: 12, flexShrink: 1 }}>Ver enlace</Copy><ArrowRightIcon size={14} color={p.accent} /></Pressable></ExternalLink> : <View style={{ flex: 1 }} />}
+        <ExternalLink href={item.link as `https://${string}` | `http://${string}`} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Ver enlace de ${item.title}`} style={({ pressed }) => ({ minHeight: 48, minWidth: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: pressed ? p.soft : 'transparent', opacity: pressed ? 0.6 : 1 })}><ArrowSquareOutIcon size={23} color={p.accent} /></Pressable></ExternalLink>
       </View>}
+      </View>
     </View>
   </View>;
 }

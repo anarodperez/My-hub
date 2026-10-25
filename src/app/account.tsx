@@ -4,7 +4,6 @@ import {
   Field,
   IconAction,
   Screen,
-  Surface,
   TextAction,
 } from "@/components/hub-ui";
 import { createRecoveryClient, supabase } from "@/features/account/client";
@@ -15,9 +14,10 @@ import {
 } from "@/features/account/validation";
 import { Redirect } from "expo-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BookOpenIcon, ArrowRightIcon, EyeIcon, EyeSlashIcon } from "@/components/hub-icons";
+import { ArrowRightIcon, EyeIcon, EyeSlashIcon, LockSimpleIcon } from "@/components/hub-icons";
+import { HubMark } from '@/components/hub-mark';
 import { usePalette } from "@/features/hub/provider";
 
 type Mode =
@@ -33,8 +33,8 @@ export default function AccountScreen() {
   useEffect(() => {
     if (!session) enteredWithSession.current = false;
   }, [session]);
-  if (session && !enteredWithSession.current) return <Redirect href="/" />;
-  return <AccountForm key={session?.user.id || "signed-out"} />;
+  if (session) return <Redirect href={enteredWithSession.current ? "/settings" : "/"} />;
+  return <AccountForm />;
 }
 function AccountForm() {
   const account = useAccount();
@@ -45,7 +45,6 @@ function AccountForm() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [code, setCode] = useState("");
-  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [failure, setFailure] = useState("");
@@ -58,9 +57,6 @@ function AccountForm() {
       mounted.current = false;
     };
   }, []);
-  useEffect(() => {
-    setName(account.profile?.name || "");
-  }, [account.profile]);
   useEffect(() => {
     setPassword("");
     setPasswordVisible(false);
@@ -215,7 +211,6 @@ function AccountForm() {
         <Copy>Cargando tu sesión…</Copy>
       </Screen>
     );
-  const signedIn = !!account.session && shownMode !== "password";
   const titles = {
     login: "Entrar",
     register: "Crear mi cuenta",
@@ -225,34 +220,8 @@ function AccountForm() {
     password: "Nueva contraseña",
   };
   const form = (
-      <View style={{ gap: shownMode === 'register' ? 16 : 20 }}>
-        {signedIn ? (
-          <>
-            <Copy>{account.session?.user.email}</Copy>
-            <Field
-              label="Nombre de tu cuenta"
-              value={name}
-              onChangeText={setName}
-              maxLength={100}
-              editable={!busy}
-            />
-            <Action
-              disabled={busy}
-              onPress={() =>
-                perform(async () => {
-                  await account.saveName(name);
-                  setMessage("Nombre guardado en tu cuenta.");
-                })
-              }
-            >
-              Guardar nombre
-            </Action>
-            <TextAction disabled={busy} onPress={cancel}>
-              Cerrar sesión
-            </TextAction>
-          </>
-        ) : (
-          <>
+      <View style={{ gap: 16 }}>
+        <>
             {shownMode !== "password" && (
               <Field
                 label="Correo electrónico"
@@ -279,7 +248,7 @@ function AccountForm() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!passwordVisible}
-                trailing={<IconAction label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'} onPress={() => setPasswordVisible((visible) => !visible)}>{passwordVisible ? <EyeSlashIcon size={21} color={p.muted} /> : <EyeIcon size={21} color={p.muted} />}</IconAction>}
+                trailing={<IconAction label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'} onPress={() => setPasswordVisible((visible) => !visible)}>{passwordVisible ? <EyeSlashIcon size={22} color={p.accent} weight="duotone" /> : <EyeIcon size={22} color={p.muted} weight="duotone" />}</IconAction>}
                 selectionColor={p.accent}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -318,11 +287,11 @@ function AccountForm() {
               />
             )}
             {shownMode === "login" && (
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: -12 }}>
-                <TextAction disabled={busy} onPress={() => changeMode("recover")}>He olvidado mi contraseña</TextAction>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: -8 }}>
+                <TextAction disabled={busy} onPress={() => changeMode("recover")}>¿Has olvidado tu contraseña?</TextAction>
               </View>
             )}
-            <Action disabled={busy} onPress={submit} style={{ alignSelf: 'stretch', minHeight: 56 }} icon={busy ? <ActivityIndicator color={p.onAccent} size="small" /> : <ArrowRightIcon size={19} color={p.onAccent} />}>
+            <Action disabled={busy} onPress={submit} style={{ alignSelf: 'stretch', minHeight: 54, borderRadius: 16, marginTop: 4 }} icon={busy ? <ActivityIndicator color={p.onAccent} size="small" /> : <ArrowRightIcon size={19} color={p.onAccent} />}>
               {busy ? "Un momento…" : titles[shownMode]}
             </Action>
             {shownMode === "confirm" && (
@@ -359,8 +328,7 @@ function AccountForm() {
                   : "Volver a entrar"}
               </TextAction>
             )}
-          </>
-        )}
+        </>
         {!!failure && <View style={[loginStyles.feedback, { backgroundColor: p.surface }]}><Copy accessibilityRole="alert" style={{ color: p.danger, fontSize: 14, lineHeight: 21 }}>{failure}</Copy></View>}
         {!!message && <Copy accessibilityLiveRegion="polite">{message}</Copy>}
         {!!account.error && (
@@ -368,11 +336,10 @@ function AccountForm() {
         )}
       </View>
   );
-  if (signedIn) return <Screen back title="Mi cuenta"><Surface>{form}</Surface></Screen>;
   return <AccountEntry mode={shownMode}>
     {form}
     {shownMode === "login" && <View style={[loginStyles.register, { borderTopColor: p.line }]}>
-      <Copy muted style={{ fontSize: 14 }}>¿Primera vez por aquí?</Copy>
+      <Copy muted style={{ fontSize: 14, textAlign: 'center' }}>¿Todavía no tienes tu espacio?</Copy>
       <View style={{ alignSelf: 'center' }}><TextAction disabled={busy} onPress={() => changeMode("register")}>Crear una cuenta</TextAction></View>
     </View>}
     {shownMode === "register" && <View style={[loginStyles.register, { borderTopColor: p.line, marginTop: 20, paddingTop: 12 }]}>
@@ -384,21 +351,39 @@ function AccountForm() {
 
 function AccountEntry({ mode, children }: { mode: Mode; children: ReactNode }) {
   const p = usePalette();
+  const { width, fontScale } = useWindowDimensions();
+  const wide = width >= 960 && fontScale <= 1.3;
   const headings = { login: 'Qué bien verte.', register: 'Tu espacio empieza aquí.', confirm: 'Revisa tu correo.', recover: 'Recupera tu acceso.', 'recovery-code': 'Un paso más.', password: 'Una nueva contraseña.' };
-  const descriptions = { login: 'Entra en tu cuenta de My Hub.', register: 'Crea tu cuenta para empezar.', confirm: 'Introduce el código que hemos enviado a tu correo.', recover: 'Escribe tu correo y te ayudamos a volver.', 'recovery-code': 'Introduce el código de recuperación de tu correo.', password: 'Elige una contraseña nueva para tu cuenta.' };
+  const descriptions = { login: 'Descubrimientos, planes y pequeñas cosas que os acercan.', register: 'Guarda lo que te gusta y compártelo con tu gente.', confirm: 'Introduce el código que hemos enviado a tu correo.', recover: 'Escribe tu correo y te ayudamos a volver.', 'recovery-code': 'Introduce el código de recuperación de tu correo.', password: 'Elige una contraseña nueva para tu cuenta.' };
+  const brand = <View style={loginStyles.brand} accessible accessibilityLabel="My Hub">
+    <HubMark size={46} />
+    <Copy style={loginStyles.wordmark}>my hub<Copy style={{ color: p.accent }}>.</Copy></Copy>
+  </View>;
   return <SafeAreaView style={[loginStyles.screen, { backgroundColor: p.background }]}>
     <KeyboardAvoidingView style={loginStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} contentContainerStyle={loginStyles.scroll}>
-        <View style={loginStyles.content}>
-          <View style={loginStyles.brand} accessible accessibilityLabel="My Hub">
-            <BookOpenIcon size={28} color={p.accent} weight="duotone" />
-            <Copy style={loginStyles.wordmark}>my hub<Copy style={{ color: p.accent }}>.</Copy></Copy>
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} contentContainerStyle={[loginStyles.scroll, wide && { paddingHorizontal: 48, paddingVertical: 48 }]}>
+        <View style={[loginStyles.layout, wide && { flexDirection: 'row', alignItems: 'stretch', gap: 72 }]}>
+          {wide && <View style={[loginStyles.introduction, { backgroundColor: p.soft }]}>
+            {brand}
+            <View style={{ gap: 24, paddingVertical: 48 }}>
+              <HubMark size={112} />
+              <Copy accessibilityRole="header" style={[loginStyles.manifesto, { color: p.text }]}>Lo bueno se{"\n"}comparte.</Copy>
+              <Copy style={{ fontSize: 18, lineHeight: 28, maxWidth: 330 }}>Eso que acabas de descubrir. Ese plan que tenéis pendiente. Las personas con las que quieres compartirlo.</Copy>
+            </View>
+            <Copy muted style={{ fontSize: 14, lineHeight: 22 }}>Un pequeño espacio para todo lo que os une.</Copy>
+          </View>}
+          <View style={[loginStyles.content, wide && { flex: 1, paddingVertical: 32 }]}>
+            {!wide && <View style={{ marginBottom: 30, alignItems: 'center' }}>{brand}</View>}
+            <View style={[loginStyles.heading, !wide && { alignItems: 'center' }]}>
+              <Copy accessibilityRole="header" style={[loginStyles.title, !wide && { textAlign: 'center' }]}>{mode === 'login' ? (wide ? 'Entra en tu espacio.' : <>Lo bueno se{"\n"}<Copy style={[loginStyles.title, { color: p.text }]}>comparte.</Copy></>) : mode === 'register' ? <>Crea tu <Copy style={[loginStyles.title, { color: p.text }]}>cuenta.</Copy></> : headings[mode]}</Copy>
+              <Copy muted style={[loginStyles.description, !wide && { textAlign: 'center' }]}>{descriptions[mode]}</Copy>
+            </View>
+            <View style={[loginStyles.form, { backgroundColor: p.surface, borderColor: p.line }]}>{children}</View>
+            <View style={[loginStyles.privacy, { borderColor: p.line }]}>
+              <LockSimpleIcon size={15} color={p.muted} />
+              <Copy muted style={{ flex: 1, fontSize: 12, lineHeight: 18 }}>Tu espacio personal es privado. Tú eliges qué compartir.</Copy>
+            </View>
           </View>
-          <View style={loginStyles.heading}>
-            <Copy accessibilityRole="header" style={loginStyles.title}>{mode === 'login' ? <>Qué bien <Copy style={[loginStyles.title, { color: p.accent }]}>verte.</Copy></> : mode === 'register' ? <>Crea tu <Copy style={[loginStyles.title, { color: p.accent }]}>cuenta.</Copy></> : headings[mode]}</Copy>
-            <Copy muted style={loginStyles.description}>{descriptions[mode]}</Copy>
-          </View>
-          {children}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -407,13 +392,18 @@ function AccountEntry({ mode, children }: { mode: Mode; children: ReactNode }) {
 
 const loginStyles = StyleSheet.create({
   screen: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 32, paddingBottom: 24 },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 24 },
+  layout: { width: '100%', maxWidth: 1120, alignSelf: 'center' },
   content: { width: '100%', maxWidth: 420, alignSelf: 'center' },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 28 },
-  wordmark: { fontSize: 24, lineHeight: 32, fontWeight: '800', letterSpacing: -0.7 },
-  heading: { gap: 10, marginBottom: 28, alignItems: 'center' },
-  title: { fontSize: 38, lineHeight: 43, fontWeight: '700', letterSpacing: -1.1, textAlign: 'center' },
-  description: { fontSize: 15, lineHeight: 23, textAlign: 'center' },
-  register: { marginTop: 28, paddingTop: 20, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 0 },
+  introduction: { flex: 1, padding: 40, borderRadius: 24, justifyContent: 'space-between', maxWidth: 520 },
+  manifesto: { fontSize: 40, lineHeight: 48, fontWeight: '700', letterSpacing: -1.2 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  wordmark: { fontSize: 28, lineHeight: 36, fontWeight: '800', letterSpacing: -0.8 },
+  heading: { gap: 10, marginBottom: 26 },
+  title: { fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -1 },
+  description: { fontSize: 15, lineHeight: 22, maxWidth: 300 },
+  form: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 24, padding: 20 },
+  register: { marginTop: 20, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 0 },
+  privacy: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 18, paddingHorizontal: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth },
   feedback: { padding: 14, borderRadius: 12 },
 });

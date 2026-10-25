@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Alert, Platform, View, type TextInput } from 'react-native';
 import { CoverPicker } from '@/components/cover-picker';
 import { ProductLinkField } from '@/components/product-link-field';
-import { Chips, Copy, Field, Screen, s, showError, SaveAction, TextAction } from '@/components/hub-ui';
+import { Chips, Copy, Field, Screen, showError, SaveAction, TextAction } from '@/components/hub-ui';
 import { discardCover, persistCover } from '@/features/hub/covers';
 import { isWebLink, type Category, type Wish } from '@/features/hub/model';
 import { useHub } from '@/features/hub/provider';
@@ -59,7 +59,7 @@ function WishEditor({ existing }: { existing?: Wish }) {
   };
   return <Screen back title={existing ? 'Editar deseo' : 'Añadir a wishlist'}>
     <View style={{ gap: 8 }}>
-      <Copy accessibilityRole="header" style={s.title}>{category === 'product' ? 'Tu próxima compra' : 'Algo que te hace ilusión'}</Copy>
+      <Copy accessibilityRole="header" style={{ fontSize: 22, lineHeight: 28, fontWeight: '600' }}>{category === 'product' ? 'Tu próxima compra' : 'Algo que te hace ilusión'}</Copy>
       <Copy muted>{category === 'product' ? 'Pega el enlace o añade los datos a mano.' : 'Para leer, ver, comprar o visitar cuando llegue el momento.'}</Copy>
     </View>
     <Chips value={category} recommendations onChange={(value) => { if (value !== 'all') setCategory(value); }} />
@@ -68,8 +68,8 @@ function WishEditor({ existing }: { existing?: Wish }) {
       setCoverUrl(current => current || data.coverUrl);
     }} />}
     <View style={{ gap: 16 }}>
-      {category === 'product' && <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />}
       <Field inputRef={titleInput} label={category === 'product' ? 'Nombre del producto' : '¿Qué te gustaría?'} value={title} onChangeText={setTitle} placeholder={category === 'product' ? 'Por ejemplo, una silla de escritorio' : 'Un libro, una vela, un restaurante…'} maxLength={150} error={errors.title} />
+      {category === 'product' && <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />}
     </View>
     {category !== 'product' && <>
       <Field label="Enlace (opcional)" value={link} onChangeText={setLink} placeholder="https://…" keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2000} error={errors.link} />

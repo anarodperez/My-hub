@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { Copy, SaveAction, TextAction } from './hub-ui';
-import { useHub } from '@/features/hub/provider';
+import { Copy, IconAction, SaveAction, TextAction } from './hub-ui';
+import { ShareNetworkIcon, XIcon } from './hub-icons';
+import { useHub, usePalette } from '@/features/hub/provider';
 import type { Recommendation } from '@/features/hub/model';
 import type { GroupRow } from '@/features/hub/backend-types';
 
 export function ShareDiscovery({ post, onShared }: { post: Recommendation; onShared: () => Promise<void> }) {
   const { repository, refresh } = useHub();
+  const p = usePalette();
   const current = useRef(repository); current.current = repository;
   useEffect(() => { current.current = repository; return () => { current.current = null; }; }, [repository]);
   const [open, setOpen] = useState(false);
@@ -37,7 +39,7 @@ export function ShareDiscovery({ post, onShared }: { post: Recommendation; onSha
   };
   if (post.ownerId !== repository?.accountId) return null;
   return <View style={{ gap: 8 }}>
-    <TextAction disabled={busy} onPress={() => setOpen(value => !value)}>{open ? 'Cancelar' : 'Compartir con un grupo'}</TextAction>
+    <View style={{ alignSelf: 'flex-start' }}><IconAction label={open ? 'Cancelar compartir' : 'Compartir con un grupo'} expanded={open} disabled={busy} onPress={() => setOpen(value => !value)}>{open ? <XIcon size={23} color={p.muted} /> : <ShareNetworkIcon size={23} color={p.accent} />}</IconAction></View>
     {open && <>
       <Copy muted>La publicación y sus comentarios se mostrarán solo al grupo que elijas.</Copy>
       {groups.map(group => <TextAction disabled={busy} key={group.id} onPress={() => setTarget(group.id)}>{target === group.id ? '✓ ' : ''}{group.name}</TextAction>)}

@@ -97,7 +97,7 @@ function Editor({ kind, id, date }: { kind: 'recommendation' | 'event'; id?: str
   };
   return <Screen back scrollEnabled={!ratingDragging} title={id ? 'Editar' : kind === 'recommendation' ? 'Recomendar' : 'Añadir evento'}>
     <View style={{ gap: 8 }}>
-      <Copy accessibilityRole="header" style={s.title}>{heading}</Copy>
+      <Copy accessibilityRole="header" style={{ fontSize: 22, lineHeight: 28, fontWeight: '600' }}>{heading}</Copy>
       <Copy muted style={{ fontSize: 14 }}>{kind === 'recommendation' ? 'Comparte lo que has descubierto y por qué merece la pena.' : 'Hazle un hueco en tu calendario personal.'}</Copy>
     </View>
     <Chips value={category} recommendations={kind === 'recommendation'} onChange={(value) => { if (value !== 'all') setCategory(value); }} />
@@ -107,9 +107,9 @@ function Editor({ kind, id, date }: { kind: 'recommendation' | 'event'; id?: str
       setAmount(current => current.trim() ? current : data.amount);
     }} />}
     <View style={{ gap: 16 }}>
-      {kind === 'recommendation' && category === 'product' && <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />}
       <Field inputRef={titleInput} label={kind === 'recommendation' && category === 'product' ? 'Nombre del producto' : kind === 'recommendation' && category === 'place' ? 'Nombre del sitio' : 'Título'} value={title} onChangeText={setTitle} placeholder={kind === 'recommendation' && category === 'product' ? '¿Qué has comprado?' : kind === 'recommendation' && category === 'place' ? '¿Dónde has estado?' : '¿Qué historia tienes en mente?'} error={errors.title} maxLength={150} />
       {kind === 'recommendation' && category === 'product' && <Field label="Precio en euros (opcional)" value={amount} onChangeText={setAmount} placeholder="19,99" keyboardType="decimal-pad" error={errors.amount} />}
+      {kind === 'recommendation' && category === 'product' && <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />}
     </View>
     {kind === 'recommendation' ? <>
       <Field label="¿Por qué lo recomiendas?" value={opinion} onChangeText={setOpinion} placeholder={category === 'product' ? 'Lo que te gusta, cómo lo usas…' : category === 'place' ? 'Qué pedir, el ambiente, qué te encantó…' : 'Lo que te hizo sentir, sin spoilers…'} multiline error={errors.opinion} maxLength={2000} />

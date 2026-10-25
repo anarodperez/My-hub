@@ -33,7 +33,7 @@ begin
  insert into public.group_post_responses(post_id,owner_id) values(pid,auth.uid());
  insert into public.group_post_responses(post_id,owner_id) values(pid,auth.uid()) on conflict do nothing;
  if (select count(*) from public.group_post_responses where post_id=pid)<>1 then raise exception 'Duplicate interest'; end if;
- update public.group_posts set status='delivered' where id=pid;
+ begin perform public.set_group_gift_state(pid,'delivered',1); raise exception 'Non-owner changed gift'; exception when insufficient_privilege then null; end;
  if exists(select 1 from public.group_posts where id=pid and status='delivered') then raise exception 'Non-owner delivered gift'; end if;
  delete from public.group_posts where id=pid;
  if not exists(select 1 from public.group_posts where id=pid) then raise exception 'Non-owner deleted post'; end if;
@@ -48,13 +48,13 @@ begin
  begin insert into public.group_posts(group_id,owner_id,kind,title) values(gid,auth.uid(),'plan','Intrusion'); raise exception 'Outsider published'; exception when insufficient_privilege then null; end;
  begin insert into public.group_post_responses(post_id,owner_id) values(pid,auth.uid()); raise exception 'Outsider responded'; exception when insufficient_privilege then null; end;
  perform set_config('request.jwt.claim.sub','7b1e09f3-5af1-4b2f-991c-94de71ab7100',true);
- update public.group_posts set status='delivered' where id=pid;
+ perform public.set_group_gift_state(pid,'delivered',1);
  if not exists(select 1 from public.group_posts where id=pid and status='delivered' and revision=2) then raise exception 'Owner could not deliver'; end if;
  perform set_config('request.jwt.claim.sub','7b1e09f3-5af1-4b2f-991c-94de71ab7101',true);
  delete from public.group_post_responses where post_id=pid and owner_id=auth.uid();
  begin insert into public.group_post_responses(post_id,owner_id) values(pid,auth.uid()); raise exception 'Delivered gift accepted interest'; exception when insufficient_privilege then null; end;
  perform set_config('request.jwt.claim.sub','7b1e09f3-5af1-4b2f-991c-94de71ab7100',true);
- update public.group_posts set status='open' where id=pid;
+ perform public.set_group_gift_state(pid,'open',2);
  perform public.remove_group_member(gid,'7b1e09f3-5af1-4b2f-991c-94de71ab7101');
  perform set_config('request.jwt.claim.sub','7b1e09f3-5af1-4b2f-991c-94de71ab7101',true);
  if exists(select 1 from public.group_posts where id=pid) or public.hub_can_read_group_media(photo) then raise exception 'Removed member still reads'; end if;

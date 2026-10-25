@@ -34,7 +34,7 @@ export function SaveRecommendation({ id }: { id: string }) {
     } catch { if (mounted.current) showError(); } finally { if (mounted.current) setBusy(false); }
   };
   return <Animated.View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-    <IconAction label={saved ? 'Quitar de mi wishlist' : 'Guardar en mi wishlist'} onPress={() => { void save(); }}><Animated.View style={{ transform: [{ scale }] }}><BookmarkSimpleIcon size={22} color={p.accent} weight={saved ? 'fill' : 'regular'} /></Animated.View></IconAction>
-    <Copy accessibilityLiveRegion="polite" muted style={{ fontSize: 12 }}>{saved ? 'Guardado' : 'Guardar'}</Copy>
+    <IconAction label={saved ? 'Quitar de mi wishlist' : 'Guardar en mi wishlist'} onPress={() => { void save(); }}><Animated.View style={{ transform: [{ scale }] }}><BookmarkSimpleIcon size={22} color={saved ? p.sageText : p.muted} weight={saved ? 'fill' : 'regular'} /></Animated.View></IconAction>
+    {saved && <Copy accessibilityLiveRegion="polite" muted style={{ fontSize: 12 }}>Guardado</Copy>}
   </Animated.View>;
 }

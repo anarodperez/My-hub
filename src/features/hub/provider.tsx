@@ -12,11 +12,7 @@ import { applyCloudChange, loadCloudState, type CloudMedia } from './cloud-state
 import { importLocalHub } from './import-local';
 import { useCalendarReminders } from '@/hooks/use-calendar-reminders';
 import { purgeRetiredSubscriptions } from './storage';
-
-const palettes = {
-  light: { background: '#FAF7F2', surface: '#FFFDFA', text: '#302936', muted: '#716777', accent: '#705080', onAccent: '#FFFFFF', soft: '#EDE4F1', line: '#E4DDE4', sage: '#DCE8DA', sageText: '#3C5940', danger: '#AD3548' },
-  dark: { background: '#19161D', surface: '#25212B', text: '#F5EFF7', muted: '#B8AABD', accent: '#C4A7DC', onAccent: '#24182D', soft: '#3B2E45', line: '#443B49', sage: '#33463B', sageText: '#C2DAC5', danger: '#FFA9B6' },
-};
+import { hubPalettes as palettes } from '@/constants/hub-palettes';
 type HubContextValue = {
   state: HubState; loading: boolean; error: string | null; warning: string | null; retry: () => void;
   update: (change: (state: HubState) => HubState) => Promise<void>;
