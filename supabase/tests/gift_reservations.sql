@@ -4,7 +4,10 @@ insert into public.groups(id,owner_id,name) values('9b1e09f3-5af1-4b2f-991c-94de
 insert into public.group_members(group_id,user_id) values
 ('9b1e09f3-5af1-4b2f-991c-94de71ab7110','9b1e09f3-5af1-4b2f-991c-94de71ab7100'),
 ('9b1e09f3-5af1-4b2f-991c-94de71ab7110','9b1e09f3-5af1-4b2f-991c-94de71ab7101');
+-- Exercise the manual flow of gifts published before automatic draws existed.
+alter table public.group_posts disable trigger gift_deadline;
 insert into public.group_posts(id,owner_id,group_id,kind,title) values('9b1e09f3-5af1-4b2f-991c-94de71ab7120','9b1e09f3-5af1-4b2f-991c-94de71ab7100','9b1e09f3-5af1-4b2f-991c-94de71ab7110','gift','Test gift');
+alter table public.group_posts enable trigger gift_deadline;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','9b1e09f3-5af1-4b2f-991c-94de71ab7100',true);
 do $$

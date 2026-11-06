@@ -1,7 +1,8 @@
+import { MotionReveal } from '@/components/hub-motion';
 import { randomUUID } from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Platform, View, type TextInput } from 'react-native';
+import { Alert, Platform, View, type TextInputInstance } from 'react-native';
 import { CoverPicker } from '@/components/cover-picker';
 import { ProductLinkField } from '@/components/product-link-field';
 import { Chips, Copy, Field, Screen, showError, SaveAction, TextAction } from '@/components/hub-ui';
@@ -20,7 +21,7 @@ export default function WishScreen() {
 
 function WishEditor({ existing }: { existing?: Wish }) {
   const { update } = useHub();
-  const titleInput = useRef<TextInput>(null);
+  const titleInput = useRef<TextInputInstance>(null);
   const [title, setTitle] = useState(existing?.title || '');
   const [category, setCategory] = useState<Category>(existing?.category || 'product');
   const [coverUrl, setCoverUrl] = useState(existing?.coverUrl || '');
@@ -58,18 +59,14 @@ function WishEditor({ existing }: { existing?: Wish }) {
     else Alert.alert('¿Eliminar este deseo?', 'No se puede deshacer.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Eliminar', style: 'destructive', onPress: () => { void perform(); } }]);
   };
   return <Screen back title={existing ? 'Editar deseo' : 'Añadir a wishlist'}>
-    <View style={{ gap: 8 }}>
-      <Copy accessibilityRole="header" style={{ fontSize: 22, lineHeight: 28, fontWeight: '600' }}>{category === 'product' ? 'Tu próxima compra' : 'Algo que te hace ilusión'}</Copy>
-      <Copy muted>{category === 'product' ? 'Pega el enlace o añade los datos a mano.' : 'Para leer, ver, comprar o visitar cuando llegue el momento.'}</Copy>
-    </View>
     <Chips value={category} recommendations onChange={(value) => { if (value !== 'all') setCategory(value); }} />
-    {category === 'product' && <ProductLinkField value={link} onChangeText={setLink} onManual={() => titleInput.current?.focus()} disabled={busy || picking} error={errors.link} onMetadata={(data) => {
+    {category === 'product' && <MotionReveal><ProductLinkField value={link} onChangeText={setLink} onManual={() => titleInput.current?.focus()} disabled={busy || picking} error={errors.link} onMetadata={(data) => {
       setTitle(current => current.trim() ? current : data.title);
       setCoverUrl(current => current || data.coverUrl);
-    }} />}
+    }} /></MotionReveal>}
     <View style={{ gap: 16 }}>
       <Field inputRef={titleInput} label={category === 'product' ? 'Nombre del producto' : '¿Qué te gustaría?'} value={title} onChangeText={setTitle} placeholder={category === 'product' ? 'Por ejemplo, una silla de escritorio' : 'Un libro, una vela, un restaurante…'} maxLength={150} error={errors.title} />
-      {category === 'product' && <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />}
+      {category === 'product' && <MotionReveal><CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} /></MotionReveal>}
     </View>
     {category !== 'product' && <>
       <Field label="Enlace (opcional)" value={link} onChangeText={setLink} placeholder="https://…" keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2000} error={errors.link} />

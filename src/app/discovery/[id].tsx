@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { LoadingImage as Image } from '@/components/loading-image';
 import { randomUUID } from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ShareDiscovery } from '@/components/share-discovery';

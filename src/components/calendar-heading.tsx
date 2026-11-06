@@ -1,3 +1,4 @@
+import { MotionReveal } from '@/components/hub-motion';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
@@ -26,7 +27,7 @@ export function CalendarHeading({ month, onChange }: { month: Date; onChange: (n
       </Pressable>
       <IconAction label="Mes siguiente" onPress={() => { setOpen(false); onChange(new Date(month.getFullYear(), month.getMonth() + 1, 1)); }}><CaretRightIcon size={20} color={p.text} /></IconAction>
     </View>
-    {open && <View style={{ gap: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: p.line }}>
+    {open && <MotionReveal style={{ gap: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: p.line }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <IconAction label={choosingYear ? 'Años anteriores' : 'Año anterior'} onPress={() => choosingYear ? setYearStart(yearStart - 12) : setYear(year - 1)}><CaretLeftIcon size={17} color={p.accent} /></IconAction>
         <Pressable accessibilityRole="button" accessibilityLabel={choosingYear ? 'Volver a elegir mes' : 'Elegir año'} onPress={() => { setYearStart(year - 5); setChoosingYear(!choosingYear); }} style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}><Copy style={{ fontSize: 15, fontWeight: '600', color: p.accent }}>{choosingYear ? `${yearStart} – ${yearStart + 11}` : year}</Copy></Pressable>
@@ -40,6 +41,6 @@ export function CalendarHeading({ month, onChange }: { month: Date; onChange: (n
           else { onChange(new Date(year, index, 1)); setOpen(false); }
         }} style={({ pressed }) => ({ minHeight: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: selected ? p.soft : 'transparent', opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 12, lineHeight: 18, textTransform: 'capitalize', color: selected ? p.accent : p.text, textAlign: 'center', fontWeight: selected ? '600' : '400' }}>{choosingYear ? value : months[index]}</Copy></Pressable></View>;
       })}</View>
-    </View>}
+    </MotionReveal>}
   </View>;
 }

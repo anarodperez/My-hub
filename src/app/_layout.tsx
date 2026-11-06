@@ -1,4 +1,5 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
@@ -9,12 +10,13 @@ import { hubFonts } from '@/constants/hub-design';
 
 function Navigation() {
   const p = usePalette();
+  const reducedMotion = useReducedMotion();
   const { session, loading } = useAccount();
   const [fontsLoaded, fontError] = useFonts(hubFonts);
   if (loading || (!fontsLoaded && !fontError)) return <View style={{ flex: 1, backgroundColor: p.background, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator color={p.accent} accessibilityLabel="Preparando My Hub" /></View>;
   return <ThemeProvider value={p.dark ? DarkTheme : DefaultTheme}>
     <StatusBar style={p.dark ? 'light' : 'dark'} />
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: p.background } }}>
+    <Stack screenOptions={{ animation: reducedMotion ? 'none' : 'default', headerShown: false, contentStyle: { backgroundColor: p.background } }}>
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="compose" />

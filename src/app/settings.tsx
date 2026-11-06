@@ -120,7 +120,7 @@ function ProfileEditor() {
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, flexWrap: 'wrap' }}><Copy style={{ fontSize: 13, lineHeight: 19, fontWeight: selected ? '600' : '400', color: selected ? p.accent : p.text }}>{label}</Copy>{selected && <CheckIcon size={12} color={p.accent} weight="bold" />}</View>
         </Pressable>;
       })}</View>
-      <Copy muted accessibilityLiveRegion="polite" style={{ fontSize: 13, lineHeight: 20 }}>{selectedTheme.description}</Copy>
+      {selectedTheme.value === 'system' && <Copy muted style={{ fontSize: 13, lineHeight: 20 }}>Sigue el tema de tu móvil.</Copy>}
     </View>
     <View style={[v.privacy, { borderColor: p.line }]}>
       <LockSimpleIcon size={22} color={p.sageText} />

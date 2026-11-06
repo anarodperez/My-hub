@@ -1,7 +1,8 @@
+import { MotionReveal } from '@/components/hub-motion';
 import { randomUUID } from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Platform, View, type TextInput } from 'react-native';
+import { Alert, Platform, View, type TextInputInstance } from 'react-native';
 import { RatingInput } from '@/components/rating-input';
 import { CoverPicker } from '@/components/cover-picker';
 import { ProductLinkField } from '@/components/product-link-field';
@@ -25,7 +26,7 @@ export default function ComposeScreen() {
 }
 function Editor({ kind, id, date }: { kind: 'recommendation' | 'event'; id?: string; date?: string }) {
   const { state, update, repository } = useHub();
-  const titleInput = useRef<TextInput>(null);
+  const titleInput = useRef<TextInputInstance>(null);
   const recommendation = state.recommendations.find((item) => item.id === id);
   const event = state.events.find((item) => item.id === id);
   const [visibility, setVisibility] = useState<Visibility>(recommendation?.visibility || 'private');
@@ -46,7 +47,6 @@ function Editor({ kind, id, date }: { kind: 'recommendation' | 'event'; id?: str
   const [busy, setBusy] = useState(false);
   const [picking, setPicking] = useState(false);
   const [ratingDragging, setRatingDragging] = useState(false);
-  const heading = kind === 'recommendation' ? 'Una buena recomendación' : 'Un plan que esperar';
   const save = async () => {
     if (busy || picking) return;
     const nextErrors: Record<string, string> = {};
@@ -96,25 +96,21 @@ function Editor({ kind, id, date }: { kind: 'recommendation' | 'event'; id?: str
     else Alert.alert('¿Eliminar este elemento?', 'No se puede deshacer.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Eliminar', style: 'destructive', onPress: () => { void perform(); } }]);
   };
   return <Screen back scrollEnabled={!ratingDragging} title={id ? 'Editar' : kind === 'recommendation' ? 'Recomendar' : 'Añadir evento'}>
-    <View style={{ gap: 8 }}>
-      <Copy accessibilityRole="header" style={{ fontSize: 22, lineHeight: 28, fontWeight: '600' }}>{heading}</Copy>
-      <Copy muted style={{ fontSize: 14 }}>{kind === 'recommendation' ? 'Comparte lo que has descubierto y por qué merece la pena.' : 'Hazle un hueco en tu calendario personal.'}</Copy>
-    </View>
     <Chips value={category} recommendations={kind === 'recommendation'} onChange={(value) => { if (value !== 'all') setCategory(value); }} />
-    {kind === 'recommendation' && category === 'product' && <ProductLinkField value={link} onChangeText={setLink} onManual={() => titleInput.current?.focus()} disabled={busy || picking} error={errors.link} onMetadata={(data) => {
+    {kind === 'recommendation' && category === 'product' && <MotionReveal><ProductLinkField value={link} onChangeText={setLink} onManual={() => titleInput.current?.focus()} disabled={busy || picking} error={errors.link} onMetadata={(data) => {
       setTitle(current => current.trim() ? current : data.title);
       setCoverUrl(current => current || data.coverUrl);
       setAmount(current => current.trim() ? current : data.amount);
-    }} />}
+    }} /></MotionReveal>}
     <View style={{ gap: 16 }}>
       <Field inputRef={titleInput} label={kind === 'recommendation' && category === 'product' ? 'Nombre del producto' : kind === 'recommendation' && category === 'place' ? 'Nombre del sitio' : 'Título'} value={title} onChangeText={setTitle} placeholder={kind === 'recommendation' && category === 'product' ? '¿Qué has comprado?' : kind === 'recommendation' && category === 'place' ? '¿Dónde has estado?' : '¿Qué historia tienes en mente?'} error={errors.title} maxLength={150} />
-      {kind === 'recommendation' && category === 'product' && <Field label="Precio en euros (opcional)" value={amount} onChangeText={setAmount} placeholder="19,99" keyboardType="decimal-pad" error={errors.amount} />}
-      {kind === 'recommendation' && category === 'product' && <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />}
+      {kind === 'recommendation' && category === 'product' && <MotionReveal><Field label="Precio en euros (opcional)" value={amount} onChangeText={setAmount} placeholder="19,99" keyboardType="decimal-pad" error={errors.amount} /></MotionReveal>}
+      {kind === 'recommendation' && category === 'product' && <MotionReveal><CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} /></MotionReveal>}
     </View>
     {kind === 'recommendation' ? <>
       <Field label="¿Por qué lo recomiendas?" value={opinion} onChangeText={setOpinion} placeholder={category === 'product' ? 'Lo que te gusta, cómo lo usas…' : category === 'place' ? 'Qué pedir, el ambiente, qué te encantó…' : 'Lo que te hizo sentir, sin spoilers…'} multiline error={errors.opinion} maxLength={2000} />
-      {category === 'place' && <Field label="Ubicación (opcional)" value={location} onChangeText={setLocation} placeholder="Ciudad, barrio o dirección" maxLength={250} />}
-      {category === 'place' && <Field label="Web o enlace del sitio (opcional)" value={link} onChangeText={setLink} placeholder="https://…" keyboardType="url" autoCapitalize="none" autoCorrect={false} error={errors.link} maxLength={2000} />}
+      {category === 'place' && <MotionReveal><Field label="Ubicación (opcional)" value={location} onChangeText={setLocation} placeholder="Ciudad, barrio o dirección" maxLength={250} /></MotionReveal>}
+      {category === 'place' && <MotionReveal><Field label="Web o enlace del sitio (opcional)" value={link} onChangeText={setLink} placeholder="https://…" keyboardType="url" autoCapitalize="none" autoCorrect={false} error={errors.link} maxLength={2000} /></MotionReveal>}
       <RatingInput value={rating} onChange={setRating} onInteractionChange={setRatingDragging} />
       {category !== 'product' && <>
         <CoverPicker uri={coverUrl} onChange={setCoverUrl} busy={busy || picking} onBusyChange={setPicking} />
@@ -124,11 +120,10 @@ function Editor({ kind, id, date }: { kind: 'recommendation' | 'event'; id?: str
       <Field label="Fecha (AAAA-MM-DD)" value={entryDate} onChangeText={setEntryDate} placeholder="2026-10-24" keyboardType="numbers-and-punctuation" maxLength={10} error={errors.date} />
       <Privacy>Este evento es privado</Privacy>
     </>}
-    {kind === 'recommendation' && <View style={{ gap: 10 }}><Copy style={s.fieldLabel}>Quién puede verlo</Copy><ChoiceTabs value={visibility} onChange={setVisibility} options={[{ value: 'private', label: 'Solo yo' }, { value: 'public', label: 'Usuarios' }, { value: 'group', label: 'Grupo' }]} />{visibility === 'group' && <View style={{ gap: 6 }}>{groups.map((group) => <TextAction key={group.id} onPress={() => setGroupId(group.id)}>{group.name}</TextAction>)}{!groups.length && <TextAction onPress={() => router.push('/groups')}>Crear o unirme a un grupo</TextAction>}{!!groupError && <Copy accessibilityRole="alert">{groupError}</Copy>}</View>}{errors.visibility && <Copy accessibilityRole="alert">{errors.visibility}</Copy>}</View>}
+    {kind === 'recommendation' && <View style={{ gap: 10 }}><Copy style={s.fieldLabel}>Quién puede verlo</Copy><ChoiceTabs value={visibility} onChange={setVisibility} options={[{ value: 'private', label: 'Solo yo' }, { value: 'public', label: 'Usuarios' }, { value: 'group', label: 'Grupo' }]} />{visibility === 'group' && <MotionReveal style={{ gap: 6 }}>{groups.map((group) => <TextAction key={group.id} onPress={() => setGroupId(group.id)}>{group.name}</TextAction>)}{!groups.length && <TextAction onPress={() => router.push('/groups')}>Crear o unirme a un grupo</TextAction>}{!!groupError && <Copy accessibilityRole="alert">{groupError}</Copy>}</MotionReveal>}{errors.visibility && <Copy accessibilityRole="alert">{errors.visibility}</Copy>}</View>}
     <SaveAction onPress={() => { void save(); }} busy={busy} disabled={picking}>{id ? 'Guardar cambios' : kind === 'recommendation' ? 'Guardar recomendación' : 'Añadir a mi calendario'}</SaveAction>
     {kind === 'event' && event && (title.trim() === event.title && entryDate === event.date ? <CalendarReminder event={event} /> : <Copy muted>Guarda los cambios del plan antes de ajustar su recordatorio.</Copy>)}
     {kind === 'recommendation' && id && state.saved.some((entry) => entry.recommendationId === id) && <TextAction disabled={busy || picking} onPress={() => { void removeFromWishlist(); }}>Quitar de wishlist</TextAction>}
     {id && <View style={{ alignSelf: 'center' }}><TextAction danger disabled={busy || picking} onPress={remove}>Eliminar</TextAction></View>}
-    <Copy muted style={{ fontSize: 12, lineHeight: 19, textAlign: 'center' }}>Guardado en tu cuenta.</Copy>
   </Screen>;
 }

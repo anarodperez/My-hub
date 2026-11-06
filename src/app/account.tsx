@@ -1,3 +1,4 @@
+import { MotionContent, MotionReveal } from '@/components/hub-motion';
 import {
   Action,
   Copy,
@@ -330,14 +331,14 @@ function AccountForm() {
             )}
         </>
         {!!failure && <View style={[loginStyles.feedback, { backgroundColor: p.surface }]}><Copy accessibilityRole="alert" style={{ color: p.danger, fontSize: 14, lineHeight: 21 }}>{failure}</Copy></View>}
-        {!!message && <Copy accessibilityLiveRegion="polite">{message}</Copy>}
+        {!!message && <MotionReveal><Copy accessibilityLiveRegion="polite">{message}</Copy></MotionReveal>}
         {!!account.error && (
           <Copy accessibilityRole="alert" style={{ color: p.danger, fontSize: 14, lineHeight: 21 }}>{account.error}</Copy>
         )}
       </View>
   );
   return <AccountEntry mode={shownMode}>
-    {form}
+    <MotionContent changeKey={shownMode}>{form}</MotionContent>
     {shownMode === "login" && <View style={[loginStyles.register, { borderTopColor: p.line }]}>
       <Copy muted style={{ fontSize: 14, textAlign: 'center' }}>¿Todavía no tienes tu espacio?</Copy>
       <View style={{ alignSelf: 'center' }}><TextAction disabled={busy} onPress={() => changeMode("register")}>Crear una cuenta</TextAction></View>

@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { LoadingImage as Image } from '@/components/loading-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, View } from 'react-native';

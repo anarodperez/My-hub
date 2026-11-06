@@ -6,11 +6,12 @@ const rows = [
   { owner_id: 'b', available_date: '2026-10-26', period: 'evening' },
   { owner_id: 'a', available_date: '2026-10-26', period: 'evening' },
   { owner_id: 'outsider', available_date: '2026-10-26', period: 'evening' },
+  { owner_id: 'busy', available_date: '2026-10-26', period: 'evening', available: false },
   { owner_id: 'a', available_date: '2026-10-24', period: 'morning' },
   { owner_id: 'b', available_date: '2026-10-24', period: 'morning' },
 ];
 test('coincidencias cuentan personas unicas actuales, excluyen pasado y franjas sin coincidencia', () => {
-  assert.deepEqual(availabilityMatches(rows, ['a', 'b'], '2026-10-25'), [{ date: '2026-10-26', period: 'evening', people: ['a', 'b'] }]);
+  assert.deepEqual(availabilityMatches(rows, ['a', 'b', 'busy'], '2026-10-25'), [{ date: '2026-10-26', period: 'evening', people: ['a', 'b'] }]);
   assert.deepEqual(availabilityMatches(rows, ['a'], '2026-10-25'), []);
 });
 test('prioriza mas personas y desempata por dia y franja', () => {

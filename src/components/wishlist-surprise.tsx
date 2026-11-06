@@ -1,6 +1,5 @@
-import { useIsFocused } from '@react-navigation/native';
 import { SparkleIcon } from 'phosphor-react-native/src/icons/Sparkle';
-import { Image } from 'expo-image';
+import { LoadingImage as Image } from '@/components/loading-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Animated, Pressable, View } from 'react-native';
@@ -15,8 +14,6 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 export function WishlistSurprise({ wishes, recommendations }: { wishes: Wish[]; recommendations: Recommendation[] }) {
   const p = usePalette();
   const reduced = useReducedMotion();
-  const visible = useIsFocused();
-  const [idle] = useState(() => new Animated.Value(0));
   const [failedCover, setFailedCover] = useState('');
   const [focused, setFocused] = useState(false);
   const [chosen, setChosen] = useState('');
@@ -31,24 +28,12 @@ export function WishlistSurprise({ wishes, recommendations }: { wishes: Wish[]; 
     animation.start();
     return () => animation.stop();
   }, [draw, reduced, reveal]);
-  const hasOptions = options.length > 0;
-  useEffect(() => {
-    if (reduced || !visible || !hasOptions) { idle.setValue(0); return; }
-    const wobble = Animated.loop(Animated.sequence([
-      Animated.delay(1600),
-      Animated.timing(idle, { toValue: 1, duration: 180, useNativeDriver: true, isInteraction: false }),
-      Animated.timing(idle, { toValue: -1, duration: 240, useNativeDriver: true, isInteraction: false }),
-      Animated.timing(idle, { toValue: 0, duration: 180, useNativeDriver: true, isInteraction: false }),
-    ]));
-    wobble.start();
-    return () => { wobble.stop(); idle.setValue(0); };
-  }, [idle, reduced, visible, hasOptions]);
   if (!options.length) return null;
   const choose = () => { const next = pickSurprise(options, chosen); if (next) { setChosen(next.key); setDraw((value) => value + 1); } };
   const open = () => { if (result) router.push(result.wish ? { pathname: '/wish', params: { id: result.item.id } } : { pathname: '/compose', params: { kind: 'recommendation', id: result.item.id } }); };
   return <View style={{ gap: 12 }}>
     <Pressable accessibilityRole="button" onPress={choose} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} style={({ pressed }) => ({ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, padding: 6, paddingRight: 10, borderRadius: 12, borderWidth: 1, borderColor: focused ? p.accent : 'transparent', backgroundColor: pressed ? p.soft : 'transparent' })}>
-      <Animated.View style={{ transform: [{ rotate: idle.interpolate({ inputRange: [-1, 0, 1], outputRange: ['-9deg', '0deg', '9deg'] }) }, { translateY: idle.interpolate({ inputRange: [-1, 0, 1], outputRange: [-1, 0, -3] }) }] }}><Animated.View style={{ transform: [{ rotate: reveal.interpolate({ inputRange: [0, 1], outputRange: ['-160deg', '-8deg'] }) }, { translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [-3, 0] }) }] }}><DiceFiveIcon size={24} color={p.accent} weight="duotone" /></Animated.View><Animated.View pointerEvents="none" style={{ position: 'absolute', right: -2, top: 0, opacity: reveal.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 0] }), transform: [{ scale: reveal.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.5, 1.3, 1] }) }] }}><SparkleIcon size={10} color={p.accent} weight="fill" /></Animated.View></Animated.View>
+      <View><Animated.View style={{ transform: [{ rotate: reveal.interpolate({ inputRange: [0, 1], outputRange: ['-160deg', '-8deg'] }) }, { translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [-3, 0] }) }] }}><DiceFiveIcon size={24} color={p.accent} weight="duotone" /></Animated.View><Animated.View pointerEvents="none" style={{ position: 'absolute', right: -2, top: 0, opacity: reveal.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 0] }), transform: [{ scale: reveal.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.5, 1.3, 1] }) }] }}><SparkleIcon size={10} color={p.accent} weight="fill" /></Animated.View></View>
       <Copy style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: p.accent }}>{result && options.length > 1 ? 'Otra sorpresa' : 'Sorpréndeme'}</Copy>
     </Pressable>
     {result && <Animated.View style={{ gap: 8, backgroundColor: p.soft, borderRadius: 16, padding: 16, opacity: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }), transform: [{ translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }] }}>

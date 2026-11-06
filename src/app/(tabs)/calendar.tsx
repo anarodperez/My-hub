@@ -1,3 +1,4 @@
+import { MotionContent, MotionReveal } from '@/components/hub-motion';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Animated, Pressable, View, useWindowDimensions } from 'react-native';
@@ -5,7 +6,8 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import { ArrowRightIcon, CalendarBlankIcon, PencilSimpleIcon } from '@/components/hub-icons';
 import { CalendarReminder } from '@/components/calendar-reminder';
 import { CalendarHeading } from '@/components/calendar-heading';
-import { AddAction, CategoryIcon, Chips, Copy, Screen, Section, TextAction } from '@/components/hub-ui';
+import { AddAction, CategoryIcon, Chips, ChoiceTabs, Copy, Screen, Section, TextAction } from '@/components/hub-ui';
+import { GroupsScreen } from '@/features/hub/groups-screen';
 import { calendarDays, localDate, recommendationCategories, type Category } from '@/features/hub/model';
 import { useHub, usePalette } from '@/features/hub/provider';
 import { getHubLayout } from '@/features/hub/layout';
@@ -17,6 +19,9 @@ const dateValue = (date: string) => new Date(date + 'T12:00:00');
 const monthLabel = (date: string) => dateValue(date).toLocaleDateString('es-ES', { month: 'short' }).replace('.', '');
 
 export default function CalendarScreen() {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [agendaOpen, setAgendaOpen] = useState(false);
+  const [scope, setScope] = useState<'personal' | 'friends'>('personal');
   const { state } = useHub();
   const p = usePalette();
   const { width, fontScale } = useWindowDimensions();
@@ -54,28 +59,32 @@ export default function CalendarScreen() {
   const selectedDate = dateValue(selected);
   const usedCategories = recommendationCategories.filter((category) => state.events.some((event) => event.category === category.value && event.date.startsWith(localDate(month).slice(0, 7))));
 
-  const dayAgenda = <View style={{ gap: 16 }}>
+  const dayAgenda = <MotionContent changeKey={`${selected}:${category}`} style={{ gap: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             <View style={{ minWidth: 62, borderRadius: 12, backgroundColor: p.soft, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center' }}><Copy style={{ color: p.accent, fontSize: 32, lineHeight: 38, fontWeight: '700' }}>{selectedDate.getDate()}</Copy></View>
             <View style={{ flex: 1, gap: 2 }}><Copy accessibilityRole="header" style={{ fontSize: 20, lineHeight: 26, fontWeight: '600', textTransform: 'capitalize' }}>{selected === today ? 'Hoy' : selectedDate.toLocaleDateString('es-ES', { weekday: 'long' })}</Copy><Copy muted style={{ fontSize: 13, lineHeight: 19 }}>{selectedDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</Copy></View>
             <AddAction label="Añadir evento al día seleccionado" onPress={add} />
           </View>
-          {agenda.selectedEvents.length ? agenda.selectedEvents.map((event) => <View key={event.id} style={{ borderRadius: 18, backgroundColor: p.surface, borderWidth: 1, borderColor: p.line, overflow: 'hidden' }}><Pressable accessibilityRole="button" accessibilityLabel={'Editar ' + event.title} onPress={() => router.push({ pathname: '/compose', params: { kind: 'event', id: event.id } })} style={({ pressed }) => ({ backgroundColor: pressed ? p.soft : p.surface, borderLeftWidth: 4, borderLeftColor: colors[event.category], padding: 16, minHeight: 88, flexDirection: 'row', alignItems: 'center', gap: 12 })}>
-            <View style={{ backgroundColor: p.soft, width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}><CategoryIcon category={event.category} size={22} /></View>
+          {agenda.selectedEvents.length ? agenda.selectedEvents.map((event) => <View key={event.id} style={{ borderRadius: 16, backgroundColor: p.surface, overflow: 'hidden' }}><Pressable accessibilityRole="button" accessibilityLabel={'Editar ' + event.title} onPress={() => router.push({ pathname: '/compose', params: { kind: 'event', id: event.id } })} style={({ pressed }) => ({ backgroundColor: pressed ? p.soft : p.surface, padding: 16, minHeight: 88, flexDirection: 'row', alignItems: 'center', gap: 12 })}>
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: p.soft, justifyContent: 'center', alignItems: 'center', gap: 3 }}><CategoryIcon category={event.category} size={20} /><View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors[event.category] }} /></View>
             <View style={{ flex: 1, gap: 4 }}><Copy style={{ fontSize: 16, lineHeight: 23, fontWeight: '600' }}>{event.title}</Copy><Copy muted style={hubType.metadata}>{recommendationCategories.find((category) => category.value === event.category)?.singular}</Copy></View><PencilSimpleIcon size={18} color={p.muted} />
-          </Pressable><View style={{ paddingHorizontal: 16, paddingBottom: 8 }}><CalendarReminder event={event} /></View></View>) : <View style={{ padding: 20, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: p.line, gap: 10 }}>
+          </Pressable><View style={{ paddingHorizontal: 16, paddingBottom: 8 }}><CalendarReminder event={event} /></View></View>) : <View style={{ paddingVertical: 12, gap: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><CalendarBlankIcon size={22} color={p.muted} /><Copy muted>{category === 'all' ? 'Este día está libre' : 'Sin planes de esta categoría'}</Copy></View><TextAction onPress={add}>Añadir un plan</TextAction>
           </View>}
-        </View>;
+        </MotionContent>;
 
-  return <GestureHandlerRootView style={{ flex: 1 }}><Screen wide title="Tu calendario" subtitle="Haz sitio a lo que te apetece." action={<TextAction onPress={() => selectDate(today)}>Hoy</TextAction>}>
+  const calendarScope = <ChoiceTabs value={scope} onChange={setScope} options={[{ value: 'personal', label: 'Personal' }, { value: 'friends', label: 'Con amigas' }]} />;
+  if (scope === 'friends') return <GroupsScreen back={false} calendarHeader={calendarScope} />;
+  return <GestureHandlerRootView style={{ flex: 1 }}><Screen wide title="Tu calendario" action={<TextAction onPress={() => selectDate(today)}>Hoy</TextAction>}>
+    {calendarScope}
 
 
-    <Chips value={category} onChange={setCategory} all recommendations />
+    <TextAction onPress={() => setFiltersOpen(!filtersOpen)}>{filtersOpen ? 'Ocultar filtros' : 'Filtrar'}</TextAction>
+    {filtersOpen && <MotionReveal><Chips value={category} onChange={setCategory} all recommendations /></MotionReveal>}
 
     <View style={{ flexDirection: sideBySide ? 'row' : 'column', gap: 28, alignItems: 'flex-start' }}>
       <View style={{ width: sideBySide ? '52%' : '100%' }}>
-        <View style={{ backgroundColor: p.surface, borderRadius: 24, borderWidth: 1, borderColor: p.line, paddingHorizontal: 8, paddingVertical: 18, marginHorizontal: width < 600 ? -12 : 0, gap: 16 }}>
+        <View style={{ backgroundColor: p.surface, borderRadius: 16, paddingHorizontal: 8, paddingVertical: 14, marginHorizontal: width < 600 ? -12 : 0, gap: 12 }}>
           <CalendarHeading month={month} onChange={changeMonth} />
           <View style={{ flexDirection: 'row' }}>{['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, index) => <Copy key={index} muted style={{ width: '14.2857%', textAlign: 'center', fontSize: 12, lineHeight: 18, fontWeight: '600' }}>{day}</Copy>)}</View>
           <GestureDetector gesture={swipe} touchAction="pan-y"><Animated.View style={{ opacity: monthOpacity }}>{Array.from({ length: Math.ceil(days.length / 7) }, (_, week) => <View key={week}><View style={{ flexDirection: 'row' }}>{days.slice(week * 7, week * 7 + 7).map((day, index) => {
@@ -83,7 +92,7 @@ export default function CalendarScreen() {
             const isSelected = selected === day;
             const isToday = today === day;
             const dots = [...new Set(entries.map((event) => event.category))];
-            return <View key={day || 'blank-' + index} style={{ width: '14.2857%', paddingVertical: 2 }}>{day && <Pressable accessibilityRole="button" accessibilityLabel={dateValue(day).toLocaleDateString('es-ES', { dateStyle: 'full' }) + (isToday ? ', hoy' : '') + (entries.length ? ', ' + entries.length + (entries.length === 1 ? ' evento' : ' eventos') : '')} accessibilityState={{ selected: isSelected }} onPress={() => { setSelected(day); if (!entries.length) router.push({ pathname: '/compose', params: { kind: 'event', date: day } }); }} onLongPress={() => { setSelected(day); router.push({ pathname: '/compose', params: { kind: 'event', date: day } }); }} accessibilityHint={entries.length ? "Ver los planes de este día. Mantén pulsado para añadir otro." : "Añadir un plan en esta fecha"} style={({ pressed }) => ({ minHeight: 54, borderRadius: 15, borderWidth: 1, borderColor: isToday && !isSelected ? p.accent : 'transparent', backgroundColor: isSelected ? p.accent : entries.length ? p.soft : index >= 5 ? p.background : 'transparent', alignItems: 'center', justifyContent: 'center', gap: 4, opacity: pressed ? 0.7 : 1 })}>
+            return <View key={day || 'blank-' + index} style={{ width: '14.2857%', paddingVertical: 2 }}>{day && <Pressable accessibilityRole="button" accessibilityLabel={dateValue(day).toLocaleDateString('es-ES', { dateStyle: 'full' }) + (isToday ? ', hoy' : '') + (entries.length ? ', ' + entries.length + (entries.length === 1 ? ' evento' : ' eventos') : '')} accessibilityState={{ selected: isSelected }} onPress={() => setSelected(day)} onLongPress={() => { setSelected(day); router.push({ pathname: '/compose', params: { kind: 'event', date: day } }); }} accessibilityHint="Ver el día. Mantén pulsado para añadir un plan." style={({ pressed }) => ({ minHeight: 54, borderRadius: 15, borderWidth: 1, borderColor: isToday && !isSelected ? p.accent : 'transparent', backgroundColor: isSelected ? p.accent : entries.length ? p.soft : index >= 5 ? p.background : 'transparent', alignItems: 'center', justifyContent: 'center', gap: 4, opacity: pressed ? 0.7 : 1 })}>
               <Copy style={{ fontSize: 16, lineHeight: 23, color: isSelected ? p.onAccent : index >= 5 ? p.muted : p.text, fontWeight: isToday || entries.length || isSelected ? '700' : '400' }}>{Number(day.slice(-2))}</Copy>
               <View style={{ height: 5, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 2 }}>{dots.map((category) => <View key={category} style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: isSelected ? p.onAccent : colors[category] }} />)}</View>
             </Pressable>}</View>;
@@ -102,19 +111,15 @@ export default function CalendarScreen() {
       <View style={{ flex: 1, gap: 4 }}><Copy style={{ color: p.sageText, fontSize: 12, lineHeight: 18 }}>{calendarCountdown(agenda.next.date, today)}</Copy><Copy style={{ color: p.sageText, fontSize: 16, lineHeight: 22, fontWeight: '600' }}>{agenda.next.events[0].title}</Copy>{agenda.next.events.length > 1 && <Copy style={{ color: p.sageText, fontSize: 12, lineHeight: 18 }}>+{agenda.next.events.length - 1} ese día</Copy>}</View>
       <ArrowRightIcon size={20} color={p.sageText} />
     </Pressable>}
-        {!!agenda.upcoming.length && <View style={{ gap: 16 }}>
+        {!!agenda.upcoming.length && <TextAction onPress={() => setAgendaOpen(!agendaOpen)}>{agendaOpen ? 'Ocultar agenda' : 'Ver próximos planes'}</TextAction>}
+        {agendaOpen && !!agenda.upcoming.length && <MotionReveal style={{ gap: 16 }}>
           <Section title="Lo próximo" />
           {agenda.upcoming.map((group) => <View key={group.date} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
             <View style={{ minWidth: 42, paddingTop: 12, alignItems: 'center' }}><Copy style={{ fontSize: 22, lineHeight: 28, fontWeight: '700' }}>{Number(group.date.slice(-2))}</Copy><Copy muted style={{ fontSize: 11, lineHeight: 17, textTransform: 'uppercase' }}>{monthLabel(group.date)}</Copy></View>
             <View style={{ flex: 1, borderBottomWidth: 1, borderBottomColor: p.line, paddingBottom: 12 }}>{group.events.map((event) => <Pressable key={event.id} accessibilityRole="button" accessibilityLabel={'Ver ' + event.title + ', ' + group.date} onPress={() => selectDate(group.date)} style={({ pressed }) => ({ minHeight: 52, paddingVertical: 10, gap: 6, opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 15, lineHeight: 22, fontWeight: '600' }}>{event.title}</Copy><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><CategoryIcon category={event.category} size={13} /><Copy muted style={hubType.metadata}>{recommendationCategories.find((category) => category.value === event.category)?.singular}</Copy></View></Pressable>)}</View>
           </View>)}
-        </View>}
+        </MotionReveal>}
       </View>
-    </View>
-    <View style={{ borderTopWidth: 1, borderColor: p.line, paddingTop: 16, gap: 4 }}>
-      <Section title="Para quedar en grupo" />
-      <Copy muted>Consulta cuándo coincidís sin compartir tus eventos personales.</Copy>
-      <TextAction onPress={() => router.push('/(tabs)/friends')}>Ver disponibilidad del grupo</TextAction>
     </View>
   </Screen></GestureHandlerRootView>;
 }

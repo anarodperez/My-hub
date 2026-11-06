@@ -1,3 +1,4 @@
+import { MotionContent, MotionReveal } from '@/components/hub-motion';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
@@ -47,20 +48,21 @@ export default function LibraryScreen() {
       </Pressable>)}
     </View>
     </>}
-    <Field label="Buscar por título" value={query} onChangeText={setQuery} placeholder="Busca en tu colección…" returnKeyType="search" autoCorrect={false} />
     <View style={{ gap: 12 }}>
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12 }}>
+      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
         <IconAction label={`${filtersOpen ? 'Ocultar' : 'Mostrar'} filtros${activeFilters ? `, ${activeFilters} activos` : ''}`} expanded={filtersOpen} onPress={() => setFiltersOpen(!filtersOpen)}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><SlidersHorizontalIcon size={23} color={filtersOpen || activeFilters ? p.accent : p.muted} weight={activeFilters ? 'duotone' : 'regular'} />{activeFilters > 0 && <Copy style={{ color: p.accent, fontSize: 12 }}>{activeFilters}</Copy>}</View>
         </IconAction>
         {(activeFilters > 0 || !!query.trim()) && <IconAction label="Limpiar filtros y búsqueda" onPress={() => { setCategory('all'); setMinimumRating('0'); setQuery(''); }}><FunnelXIcon size={23} color={p.muted} /></IconAction>}
+        <View style={{ flex: 1 }}><Field label="Buscar por título" value={query} onChangeText={setQuery} placeholder="Busca en tu colección…" returnKeyType="search" autoCorrect={false} /></View>
       </View>
-      {filtersOpen && <View style={{ gap: 12, paddingBottom: 12, borderBottomWidth: 1, borderColor: p.line }}>
+      {filtersOpen && <MotionReveal style={{ gap: 12, paddingBottom: 12, borderBottomWidth: 1, borderColor: p.line }}>
     <Chips value={category} onChange={setCategory} all recommendations />
     <ChoiceTabs value={minimumRating} onChange={setMinimumRating} options={[{ value: '0', label: 'Todas las notas' }, { value: '4', label: '4 ★ o más' }, { value: '5', label: '5 ★' }]} />
-      </View>}
+      </MotionReveal>}
     </View>
     </View>
+    <MotionContent changeKey={`${collection}:${filter}:${category}:${minimumRating}`} style={{ gap: 24 }}>
     {collection === 'mine' ? <>
       {mine.map(item => <RecommendationCard key={item.id} item={item} />)}
       {!mine.length && <Empty icon={<BookmarkSimpleIcon size={32} color={p.accent} />} title="Sin descubrimientos" description="Prueba otra búsqueda o añade tu primera recomendación." action={<TextAction onPress={() => { setQuery(''); setCategory('all'); setMinimumRating('0'); }}>Limpiar filtros</TextAction>} />}
@@ -81,5 +83,6 @@ export default function LibraryScreen() {
       </View>
     </View>
     </>}
+    </MotionContent>
   </Screen>;
 }

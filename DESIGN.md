@@ -10,6 +10,8 @@ Interfaz móvil de operación, cálida y tranquila. Fondos crema y blanco cálid
 
 Phosphor de línea para controles y duotone para categorías. No emojis. Navegación inferior de cuatro destinos, etiquetas visibles, botones de 48 puntos como mínimo. Esquinas de 16 puntos en superficies y controles pequeños redondeados. Texto secundario con contraste; color nunca es el único indicador de estado.
 
+Navegación móvil con cuatro celdas de igual ancho, selección suave detrás del icono y etiquetas de 12/16, permitiendo dos líneas con texto ampliado. Las portadas del feed se presentan en vertical junto al título; sitios y productos conservan imagen amplia. Wishlist reúne búsqueda y filtros en una fila, valorar y completar en el pie y el enlace sobre la imagen con su propio objetivo táctil. Cabeceras y grupos priorizan proporciones compactas y crecimiento natural del contenido.
+
 Colores actuales: `src/constants/hub-palettes.ts`, compartidos entre componentes y ambos temas. Contraste AA de pares de texto y contraste de bordes de campos verificados en `tests/hub-palette.test.cjs`. Referencia visual original: docs/superpowers/specs/2026-10-13-my-hub-design.md.
 
 Inicio prioriza contenido: saludo y acción compactos, una sola fila de filtros con iconos y recomendaciones con fotografías amplias. No usa un bloque promocional ni categorías duplicadas. El recuento es una insignia pequeña; el guardado local se comunica sin ocupar una sección dominante. Wishlist conserva tarjetas compactas para leer la lista.

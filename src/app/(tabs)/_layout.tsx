@@ -1,6 +1,7 @@
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
 import { router, Tabs } from 'expo-router';
-import { PixelRatio, Pressable, View, useWindowDimensions } from 'react-native';
+import { Pressable, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BookmarkSimpleIcon, CalendarBlankIcon, HouseIcon, UserCircleIcon } from '@/components/hub-icons';
 import { HubMark } from '@/components/hub-mark';
@@ -11,6 +12,7 @@ import { hubWidths } from '@/constants/hub-design';
 
 export default function TabLayout() {
   const p = usePalette();
+  const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
   const { sidebar } = getHubLayout(width, fontScale);
@@ -22,9 +24,9 @@ export default function TabLayout() {
         const options = props.descriptors[route.key].options;
         const title = options.title || route.name;
         return <Pressable key={route.key} accessibilityRole="tab" accessibilityLabel={'Ir a ' + title} accessibilityState={{ selected: focused }} onPress={() => {
-          const event = props.navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-          if (!focused && !event.defaultPrevented) props.navigation.navigate(route.name, route.params);
-        }} onLongPress={() => props.navigation.emit({ type: 'tabLongPress', target: route.key })} style={({ pressed }) => ({ minHeight: 52, marginBottom: 8, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: focused || pressed ? p.soft : 'transparent' })}>
+          const event = props.emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!focused && !event.defaultPrevented) props.navigateToTab(route.key);
+        }} onLongPress={() => props.emitter.emit({ type: 'tabLongPress', target: route.key })} style={({ pressed }) => ({ minHeight: 52, marginBottom: 8, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: focused || pressed ? p.soft : 'transparent' })}>
           {options.tabBarIcon?.({ focused, color: focused ? p.accent : p.muted, size: 24 })}<Copy style={{ flexShrink: 1, fontSize: 15, fontWeight: focused ? '600' : '400', color: focused ? p.accent : p.muted }}>{title}</Copy>
         </Pressable>;
       })}
@@ -37,17 +39,17 @@ export default function TabLayout() {
       const title = options.title || route.name;
       const color = focused ? p.accent : p.muted;
       return <Pressable key={route.key} hitSlop={{ left: 16, right: 16 }} accessibilityRole="tab" accessibilityLabel={'Ir a ' + title} accessibilityState={{ selected: focused }} onPress={() => {
-        const event = props.navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-        if (!focused && !event.defaultPrevented) props.navigation.navigate(route.name, route.params);
-      }} onLongPress={() => props.navigation.emit({ type: 'tabLongPress', target: route.key })} style={({ pressed }) => ({ minHeight: 48, justifyContent: 'center', alignItems: 'center', gap: 3, opacity: pressed ? 0.65 : 1 })}>
-        <View style={{ width: 0, height: 24, alignItems: 'center' }}>{options.tabBarIcon?.({ focused, color, size: 24 })}</View>
-        <Copy numberOfLines={1} style={{ color, fontSize: 10, lineHeight: 14, fontWeight: '600', textAlign: 'center', transform: [{ translateX: (index === 0 || index === props.state.routes.length - 1 ? -1 : 0) / PixelRatio.get() }] }}>{title}</Copy>
+        const event = props.emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+        if (!focused && !event.defaultPrevented) props.navigateToTab(route.key);
+      }} onLongPress={() => props.emitter.emit({ type: 'tabLongPress', target: route.key })} style={({ pressed }) => ({ flex: 1, minWidth: 0, minHeight: 56, justifyContent: 'center', alignItems: 'center', gap: 2, opacity: pressed ? 0.65 : 1 })}>
+        <View style={{ width: 52, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: focused ? p.soft : 'transparent' }}>{options.tabBarIcon?.({ focused, color, size: 24 })}</View>
+        <Copy numberOfLines={fontScale > 1.3 ? 2 : 1} style={{ color, fontSize: 12, lineHeight: 16, fontWeight: focused ? '600' : '400', textAlign: 'center' }}>{title}</Copy>
       </Pressable>;
     })}
-  </View>} screenOptions={{ headerShown: false, tabBarPosition: sidebar ? 'left' : 'bottom', sceneStyle: { backgroundColor: p.background } }}>
-    <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: ({ color, focused }) => <HouseIcon color={color} size={24} weight={focused ? 'fill' : 'regular'} /> }} />
-    <Tabs.Screen name="library" options={{ title: 'Wishlist', tabBarIcon: ({ color, focused }) => <BookmarkSimpleIcon color={color} size={24} weight={focused ? 'fill' : 'regular'} /> }} />
-    <Tabs.Screen name="calendar" options={{ title: 'Calendario', tabBarIcon: ({ color, focused }) => <CalendarBlankIcon color={color} size={24} weight={focused ? 'fill' : 'regular'} /> }} />
-    <Tabs.Screen name="friends" options={{ title: 'Amigas', tabBarAccessibilityLabel: 'Amigas', tabBarIcon: ({ color, focused }) => <UsersThreeIcon color={color} size={24} weight={focused ? 'fill' : 'regular'} /> }} />
+  </View>} screenOptions={{ animation: reducedMotion ? 'none' : 'fade', transitionSpec: { animation: 'timing', config: { duration: 180 } }, headerShown: false, tabBarPosition: sidebar ? 'left' : 'bottom', sceneStyle: { backgroundColor: p.background } }}>
+    <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: ({ focused }) => <HouseIcon color={focused ? p.accent : p.muted} size={24} weight={focused ? 'fill' : 'regular'} /> }} />
+    <Tabs.Screen name="library" options={{ title: 'Wishlist', tabBarIcon: ({ focused }) => <BookmarkSimpleIcon color={focused ? p.accent : p.muted} size={24} weight={focused ? 'fill' : 'regular'} /> }} />
+    <Tabs.Screen name="calendar" options={{ title: 'Calendario', tabBarIcon: ({ focused }) => <CalendarBlankIcon color={focused ? p.accent : p.muted} size={24} weight={focused ? 'fill' : 'regular'} /> }} />
+    <Tabs.Screen name="friends" options={{ title: 'Amigas', tabBarAccessibilityLabel: 'Amigas', tabBarIcon: ({ focused }) => <UsersThreeIcon color={focused ? p.accent : p.muted} size={24} weight={focused ? 'fill' : 'regular'} /> }} />
   </Tabs>;
 }
