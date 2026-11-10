@@ -18,10 +18,32 @@ test('disponibilidad valida fecha, franja y grupo, y fija autor actual', async (
   await assert.rejects(repo.setAvailability('invalid', '2026-10-25', 'morning', true), /identificador/i);
   assert.equal(client.calls.length, 0);
   await repo.setAvailability(group, '2026-10-25', 'morning', true);
-  assert.equal(client.calls.find(c => c[0] === 'upsert')[1].owner_id, owner);
+  assert.deepEqual(client.calls.at(-1), ['rpc', 'set_group_availability', { target_group: group, target_date: '2026-10-25', target_period: 'morning', can_attend: true }]);
   await repo.setAvailability(group, '2026-10-25', 'morning', false);
-  assert.ok(client.calls.some(c => c[0] === 'eq' && c[1] === 'owner_id' && c[2] === owner));
+  assert.equal(client.calls.at(-1)[2].can_attend, false);
+  await repo.setAvailability(group, '2026-10-25', 'morning', null);
+  assert.equal(client.calls.at(-1)[2].can_attend, null);
+  await assert.rejects(repo.setAvailability(group, '2026-10-25', 'morning', 'yes'), /estado/i);
 });
+test('Inicio consulta planes futuros con fecha válida y propaga errores', async () => {
+  const client = db(); const repo = createHubRepository(client, owner);
+  await assert.rejects(repo.listUpcomingGroupPlans('2026-02-30'), /fecha/i);
+  assert.equal(client.calls.length, 0);
+  await repo.listUpcomingGroupPlans('2026-11-06');
+  assert.ok(client.calls.some(call => call[0] === 'gte' && call[1] === 'event_date' && call[2] === '2026-11-06'));
+  const failed = createHubRepository(db({ data: null, error: { message: 'Sin conexión' } }), owner);
+  await assert.rejects(failed.listUpcomingGroupPlans('2026-11-06'), /conexión/);
+});
+
+test('todo el día usa un único RPC y valida entradas antes de enviarlas', async () => {
+  const client = db(); const repo = createHubRepository(client, owner);
+  await assert.rejects(repo.setAvailabilityDay(group, '2026-02-30', true), /fecha/i);
+  await assert.rejects(repo.setAvailabilityDay(group, '2026-11-06', 'yes'), /estado/i);
+  assert.equal(client.calls.length, 0);
+  await repo.setAvailabilityDay(group, '2026-11-06', false);
+  assert.deepEqual(client.calls, [['rpc', 'set_group_availability_day', { target_group: group, target_date: '2026-11-06', can_attend: false }]]);
+});
+
 test('publicar valida datos y fotos, no acepta autor ajeno', async () => {
   const client = db({ data: { id: group }, error: null }); const repo = createHubRepository(client, owner);
   const input = { newId: group, group_id: group, kind: 'gift', title: ' Libro ', description: 'Lo regalo', cover_path: `${owner}/${group}/${group}/photo.jpeg`, owner_id: group };
@@ -50,8 +72,17 @@ test('lecturas de grupo filtran grupo, mes y tipo; limitan publicaciones por pag
   assert.ok(client.calls.some(c => c[0] === 'range' && c[1] === 30 && c[2] === 59));
 });
 test('entregar y borrar no anuncian exito si la fila ya no es propia o cambio', async () => {
-  await assert.rejects(createHubRepository(db({ data: null, error: null }), owner).setGroupGiftStatus(group, 'delivered', 1), /cambiado|disponible/i);
+  await assert.rejects(createHubRepository(db({ data: null, error: { message: 'El regalo ha cambiado' } }), owner).setGroupGiftStatus(group, 'delivered', 1), /cambiado/i);
   await assert.rejects(createHubRepository(db(), owner).deleteGroupPost(group, 1), /cambiado|disponible/i);
+});
+test('reservar usa RPC con revision y destinataria validada', async () => {
+  const client = db(); const repo = createHubRepository(client, owner);
+  await assert.rejects(repo.setGroupGiftStatus(group, 'reserved', 1), /destinataria/i);
+  await assert.rejects(repo.setGroupGiftStatus(group, 'reserved', 1, 'invalid'), /identificador/i);
+  await assert.rejects(repo.setGroupGiftStatus(group, 'open', 1, owner), /destinataria/i);
+  assert.equal(client.calls.length, 0);
+  await repo.setGroupGiftStatus(group, 'reserved', 2, owner);
+  assert.deepEqual(client.calls[0], ['rpc', 'set_group_gift_state', { target: group, next_status: 'reserved', expected_revision: 2, recipient: owner }]);
 });
 test('reintentar una publicacion ya creada recupera la misma fila y rechaza cambios', async () => {
   const input = { newId: group, group_id: group, kind: 'plan', title: 'Cine', description: '', event_date: null, cover_path: '' };

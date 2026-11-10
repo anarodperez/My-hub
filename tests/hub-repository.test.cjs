@@ -11,6 +11,15 @@ function client(result) {
 }
 const owner='10000000-0000-4000-8000-000000000001';
 const id='20000000-0000-4000-8000-000000000001';
+
+test('preferencias validan colecciones y clientes anteriores no sobrescriben su organizacion', async () => {
+ const db=client({data:{id:owner,revision:2},error:null});const repo=createHubRepository(db,owner);
+ assert.throws(()=>repo.savePreferences({wishlist_organization:{collections:[],assignments:{'wish:x':'missing'}}}),/Colecciones/);
+ assert.equal(db.calls.length,0);
+ await repo.savePreferences({id:owner,revision:1,theme:'dark'});
+ const payload=db.calls.find(c=>c[0]==='update')[1];
+ assert.equal(Object.hasOwn(payload,'wishlist_organization'),false);
+});
 test('grupos incluyen recuento de miembros en la misma consulta',async()=>{
  const db=client({data:[],error:null});await createHubRepository(db,owner).listGroups();
  assert.ok(db.calls.some(c=>c[0]==='select'&&c[1]==='*,group_members(count)'));

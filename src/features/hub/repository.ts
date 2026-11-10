@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isLocalDate, isRating, isWebLink, recommendationCategories } from './model.ts';
+import { validOrganization } from './wishlist-collections.ts';
 import type { AvailabilityPeriod, AvailabilityRow, GroupPostInput, GroupPostKind, GroupPostRow, Author, CommentRow, Edit, EventInput, EventRow, GroupRow, PreferencesInput, PreferencesRow, RecommendationInput, RecommendationRow, SongInput, SongRow, WishInput, WishlistRow } from './backend-types.ts';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -109,6 +110,10 @@ export function createHubRepository(client: SupabaseClient, accountId: string) {
       const payload: Record<string, unknown> = {};
       if (input.theme !== undefined) payload.theme = input.theme;
       if (input.wishlist_visibility !== undefined) payload.wishlist_visibility = input.wishlist_visibility;
+      if (input.wishlist_organization !== undefined) {
+        if (!validOrganization(input.wishlist_organization)) throw new Error('Colecciones no válidas.');
+        payload.wishlist_organization = input.wishlist_organization;
+      }
       return save<PreferencesRow>('user_preferences', input, payload, true);
     },
     async saveProfile(input: { name?: string; avatar_path?: string | null }) {
@@ -129,22 +134,45 @@ export function createHubRepository(client: SupabaseClient, accountId: string) {
     async listAvailability(groupId: string, from: string, through: string) {
       uuid(groupId); date(from); date(through);
       const rows: AvailabilityRow[] = [];
-      for (let offset = 0; ; offset += 200) {
-        const page = await checked<AvailabilityRow[]>(client.from('group_availability').select('*').eq('group_id', groupId).gte('available_date', from).lte('available_date', through).order('id').range(offset, offset + 199));
-        rows.push(...page);
-        if (page.length < 200) return rows;
+      for (const table of ['group_availability', 'group_unavailability']) {
+        for (let offset = 0; ; offset += 200) {
+          const page = await checked<AvailabilityRow[]>(client.from(table).select('*').eq('group_id', groupId).gte('available_date', from).lte('available_date', through).order('id').range(offset, offset + 199));
+          rows.push(...page.map(row => ({ ...row, available: table === 'group_availability' })));
+          if (page.length < 200) break;
+        }
       }
+      return rows;
     },
-    async setAvailability(groupId: string, day: string, period: AvailabilityPeriod, available: boolean) {
+    async setAvailability(groupId: string, day: string, period: AvailabilityPeriod, available: boolean | null) {
       uuid(groupId); date(day);
       if (!['morning', 'afternoon', 'evening'].includes(period)) throw new Error('Franja no válida.');
-      if (available) await checked(client.from('group_availability').upsert({ group_id: groupId, owner_id: accountId, available_date: day, period }, { onConflict: 'group_id,owner_id,available_date,period', ignoreDuplicates: true }));
-      else await checked(client.from('group_availability').delete().eq('group_id', groupId).eq('owner_id', accountId).eq('available_date', day).eq('period', period));
+      if (available !== null && typeof available !== 'boolean') throw new Error('Estado no válido.');
+      await checked(client.rpc('set_group_availability', { target_group: groupId, target_date: day, target_period: period, can_attend: available }));
+    },
+    async listUpcomingGroupPlans(today: string) {
+      date(today);
+      return checked<GroupPostRow[]>(client.from('group_posts').select('*,group_post_responses(post_id,owner_id),group_post_bids(post_id,owner_id,amount_cents)').eq('kind', 'plan').eq('status', 'open').gte('event_date', today).order('event_date').order('created_at').limit(3));
+    },
+    async setAvailabilityDay(groupId: string, day: string, available: boolean | null) {
+      uuid(groupId); date(day);
+      if (available !== null && typeof available !== 'boolean') throw new Error('Estado no válido.');
+      await checked(client.rpc('set_group_availability_day', { target_group: groupId, target_date: day, can_attend: available }));
     },
     async listGroupPosts(groupId: string, kind: GroupPostKind, offset = 0) {
       uuid(groupId);
       if (!['plan', 'gift'].includes(kind) || !Number.isSafeInteger(offset) || offset < 0) throw new Error('Consulta no válida.');
-      return checked<GroupPostRow[]>(client.from('group_posts').select('*,group_post_responses(post_id,owner_id)').eq('group_id', groupId).eq('kind', kind).order('created_at', { ascending: false }).order('id', { ascending: false }).range(offset, offset + 29));
+      return checked<GroupPostRow[]>(client.from('group_posts').select('*,group_post_responses(post_id,owner_id),group_post_bids(post_id,owner_id,amount_cents)').eq('group_id', groupId).eq('kind', kind).order('created_at', { ascending: false }).order('id', { ascending: false }).range(offset, offset + 29));
+    },
+    async resolveGroupGiftDraws(groupId: string) {
+      return rpc<void>('resolve_group_gift_draws', { target_group: uuid(groupId) });
+    },
+    async placeGroupBid(id: string, amount: number) {
+      uuid(id);
+      if (!Number.isSafeInteger(amount) || amount < 1 || amount > 99999999) throw new Error('Importe no válido.');
+      return rpc<void>('place_group_bid', { target: id, amount });
+    },
+    async reservePricedGift(id: string) {
+      return rpc<void>('reserve_priced_gift', { target: uuid(id) });
     },
     async createGroupPost(input: GroupPostInput) {
       uuid(input.newId); uuid(input.group_id);
@@ -152,13 +180,18 @@ export function createHubRepository(client: SupabaseClient, accountId: string) {
       const title = text(input.title, 150);
       if (typeof input.description !== 'string' || input.description.trim().length > 2000) throw new Error('Descripción demasiado larga.');
       const eventDate = input.event_date ? date(input.event_date) : null;
+      if (input.offer_mode && (!['gift', 'fixed', 'auction'].includes(input.offer_mode) || input.kind !== 'gift')) throw new Error('Modalidad no válida.');
+      const paid = input.offer_mode === 'fixed' || input.offer_mode === 'auction';
+      if (paid ? !Number.isSafeInteger(input.price_cents) || input.price_cents! < 1 || input.price_cents! > 99999999 : input.price_cents != null) throw new Error('Importe no válido.');
+      if (input.offer_mode === 'fixed' && input.gift_draw_at) throw new Error('El precio fijo no tiene plazo de sorteo.');
+      if (input.gift_draw_at && (input.kind !== 'gift' || !Number.isFinite(Date.parse(input.gift_draw_at)) || Date.parse(input.gift_draw_at) <= Date.now() || Date.parse(input.gift_draw_at) > Date.now() + 8 * 86400000)) throw new Error('El plazo del sorteo debe estar entre ahora y los próximos 7 días.');
       const cover = input.cover_path || '';
       if (cover && (input.kind !== 'gift' || !cover.startsWith(`${accountId}/${input.group_id}/${input.newId}/`) || cover.split('/').length !== 4)) throw new Error('Foto no válida.');
-      const payload = { id: input.newId, owner_id: accountId, group_id: input.group_id, kind: input.kind, title, description: input.description.trim(), event_date: input.kind === 'plan' ? eventDate : null, cover_path: cover };
-      const result = await client.from('group_posts').insert(payload).select('*,group_post_responses(post_id,owner_id)').single();
+      const payload = { id: input.newId, owner_id: accountId, group_id: input.group_id, kind: input.kind, title, description: input.description.trim(), event_date: input.kind === 'plan' ? eventDate : null, cover_path: cover, ...(input.gift_draw_at ? { gift_draw_at: input.gift_draw_at } : {}), ...(input.offer_mode ? { offer_mode: input.offer_mode, price_cents: paid ? input.price_cents : null } : {}) };
+      const result = await client.from('group_posts').insert(payload).select('*,group_post_responses(post_id,owner_id),group_post_bids(post_id,owner_id,amount_cents)').single();
       if (result.error?.code === '23505') {
-        const existing = await checked<GroupPostRow>(client.from('group_posts').select('*,group_post_responses(post_id,owner_id)').eq('id', input.newId).eq('owner_id', accountId).single());
-        if (Object.entries(payload).some(([key, value]) => existing[key as keyof GroupPostRow] !== value)) throw new Error('La publicación ya se envió con otros datos. Vuelve al grupo para verla.');
+        const existing = await checked<GroupPostRow>(client.from('group_posts').select('*,group_post_responses(post_id,owner_id),group_post_bids(post_id,owner_id,amount_cents)').eq('id', input.newId).eq('owner_id', accountId).single());
+        if (Object.entries(payload).some(([key, value]) => key === 'gift_draw_at' ? Date.parse(existing.gift_draw_at || '') !== Date.parse(value as string) : existing[key as keyof GroupPostRow] !== value)) throw new Error('La publicación ya se envió con otros datos. Vuelve al grupo para verla.');
         return existing;
       }
       if (result.error) throw new Error(result.error.message);
@@ -169,12 +202,12 @@ export function createHubRepository(client: SupabaseClient, accountId: string) {
       if (interested) await checked(client.from('group_post_responses').upsert({ post_id: postId, owner_id: accountId }, { onConflict: 'post_id,owner_id', ignoreDuplicates: true }));
       else await checked(client.from('group_post_responses').delete().eq('post_id', postId).eq('owner_id', accountId));
     },
-    async setGroupGiftStatus(id: string, status: 'open' | 'delivered', revision: number) {
+    async setGroupGiftStatus(id: string, status: 'open' | 'reserved' | 'delivered', revision: number, recipient?: string) {
       uuid(id);
-      if (!['open', 'delivered'].includes(status) || !Number.isSafeInteger(revision) || revision < 1) throw new Error('Estado no válido.');
-      const row = await checked<GroupPostRow | null>(client.from('group_posts').update({ status }).eq('id', id).eq('owner_id', accountId).eq('kind', 'gift').eq('revision', revision).select('*,group_post_responses(post_id,owner_id)').maybeSingle());
-      if (!row) throw new Error('El regalo ha cambiado o ya no está disponible. Recarga.');
-      return row;
+      if (!['open', 'reserved', 'delivered'].includes(status) || !Number.isSafeInteger(revision) || revision < 1) throw new Error('Estado no válido.');
+      if (status === 'reserved' && !recipient) throw new Error('Elige una destinataria.');
+      if (status !== 'reserved' && recipient) throw new Error('Destinataria no válida para este estado.');
+      return rpc<void>('set_group_gift_state', { target: id, next_status: status, expected_revision: revision, recipient: recipient ? uuid(recipient) : null });
     },
     async deleteGroupPost(id: string, revision: number) {
       uuid(id);

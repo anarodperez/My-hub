@@ -34,11 +34,11 @@ export function RatingInput({ value, onChange, onInteractionChange }: { value: n
       {[1, 2, 3, 4, 5].map((star) => {
         const half = value === star - 0.5;
         const Icon = half ? StarHalfIcon : StarIcon;
-        return <View key={star} style={{ flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}><Icon size={30} weight={half || star <= value ? 'fill' : 'regular'} color={p.accent} /></View>;
+        return <View key={star} style={{ flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}><Icon size={30} weight={half || star <= value ? 'fill' : 'regular'} color={p.peachText} /></View>;
       })}
       </View>
     </View>
-    <View style={{ width: 60, alignItems: 'flex-end' }}>{interacting && <View style={{ minWidth: 54, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 14, backgroundColor: p.soft }}><Copy accessibilityLiveRegion="polite" style={{ textAlign: 'center', fontSize: 13, lineHeight: 18, fontWeight: '600', fontVariant: ['tabular-nums'], color: p.accent }}>{label}<Copy muted style={{ fontSize: 10, lineHeight: 18, fontWeight: '400' }}> / 5</Copy></Copy></View>}</View>
+    <View style={{ width: 60, alignItems: 'flex-end' }}>{interacting && <View style={{ minWidth: 54, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 14, backgroundColor: p.soft }}><Copy accessibilityLiveRegion="polite" style={{ textAlign: 'center', fontSize: 13, lineHeight: 18, fontWeight: '600', fontVariant: ['tabular-nums'], color: p.peachText }}>{label}<Copy muted style={{ fontSize: 10, lineHeight: 18, fontWeight: '400' }}> / 5</Copy></Copy></View>}</View>
     </View>
     <Copy muted style={s.small}>Desliza el dedo por las estrellas. La nota cambia de media en media.</Copy>
   </View>;

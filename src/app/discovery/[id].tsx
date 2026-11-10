@@ -1,6 +1,7 @@
-import { Image } from 'expo-image';
+import { LoadingImage as Image } from '@/components/loading-image';
 import { randomUUID } from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
+import { RecommendationPlanAction } from '@/components/recommendation-plan-action';
 import { ShareDiscovery } from '@/components/share-discovery';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, View } from 'react-native';
@@ -17,7 +18,7 @@ export default function DiscoveryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { repository, media, refresh } = useHub();
   const p = usePalette();
-  const current = useRef(repository); current.current = repository;
+  const current = useRef(repository);
   const [post, setPost] = useState<Recommendation>();
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [authors, setAuthors] = useState<Record<string, Author>>({});
@@ -40,7 +41,7 @@ export default function DiscoveryScreen() {
     setMore(page.length === 30);
   };
   useEffect(() => {
-    setPost(undefined); setComments([]); setAuthors({}); setBody(''); setBusy(false); setError(''); draft.current = null;
+    current.current = repository; setPost(undefined); setComments([]); setAuthors({}); setBody(''); setBusy(false); setError(''); draft.current = null;
     void load().catch((failure) => { if (current.current === repository) setError(failure.message); });
     return () => { current.current = null; };
     // Route changes reset the conversation and pending draft identity.
@@ -97,6 +98,7 @@ export default function DiscoveryScreen() {
         {!!post.location && <View style={d.inline}><MapPinIcon size={18} color={p.muted} /><Copy muted style={{ flex: 1 }}>{post.location}</Copy></View>}
         {!!post.link && <ExternalLink href={post.link as `https://${string}` | `http://${string}`}><Copy style={{ color: p.accent, paddingVertical: 12, fontWeight: '600' }}>{post.category === 'product' ? 'Ver producto' : 'Visitar web'} ↗</Copy></ExternalLink>}
       </View>
+      <RecommendationPlanAction title={post.title} description={post.opinion} />
       <ShareDiscovery key={post.id} post={post} onShared={() => load()} />
       <View style={[d.conversation, { borderColor: p.line }]}>
         <View style={[d.inline, { justifyContent: 'space-between' }]}><Copy accessibilityRole="header" style={d.sectionTitle}>La conversación</Copy><View style={d.inline}><ChatCircleIcon size={19} color={p.muted} /><Copy muted style={d.small}>{post.commentCount || comments.length}</Copy></View></View>

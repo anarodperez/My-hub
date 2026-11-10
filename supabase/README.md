@@ -1,5 +1,7 @@
 # Conectar cuentas
 
+Colecciones de Wishlist (10 de noviembre de 2026): aplicada `migrations/202611100001_wishlist_collections.sql`. La columna opcional `user_preferences.wishlist_organization` guarda colecciones y asignaciones en la cuenta privada con el control de revisión existente. Los deseos anteriores quedan sin colección; retirar una colección no borra deseos. La migración es aditiva y repetible; los clientes anteriores preservan la columna al editar preferencias. Para volver al cliente anterior, conservar esta columna y sus datos. `tests/wishlist_collections.sql` usa únicamente una tabla temporal para verificar la forma y compatibilidad, y comprueba que RLS y la política de propietario sigan activas; no crea ni modifica cuentas reales.
+
 1. En Supabase, abrir SQL Editor y ejecutar `migrations/202610140001_profiles.sql` una sola vez. Es una transacción: si falla, no queda aplicada parcialmente. No usar la clave pública para intentar administrar el esquema.
 2. En Authentication, mantener proveedor Email y confirmación de correo activados. El formulario exige un mínimo de seis caracteres; si se configura una política más estricta, actualizar la validación local para explicar esos requisitos. Supabase siempre aplica su política del servidor.
 3. En las plantillas **Confirm signup** y **Reset password**, incluir `<p>Tu código de My Hub: {{ .Token }}</p>`. Guardar ambas plantillas. La app permite introducir el código sin depender de enlaces de Expo Go; no fijar su longitud en el formulario.
@@ -20,6 +22,8 @@ Al abrir sin sesión se muestra acceso a cuenta. Mientras se recupera la sesión
 La conexión pública y Auth se pueden verificar sin crear usuarios. SQL y flujos de correo necesitan acceso al panel y cuentas reales: no se consideran verificados por pasar lint o TypeScript.
 
 ## Activar el backend completo
+
+Mejoras posteriores del 25 de octubre de 2026: aplicada `migrations/202610250009_gift_reservations.sql`. Los regalos admiten reserva para una persona interesada del grupo. `set_group_gift_state` bloquea la fila y comprueba autoría, pertenencia, destinataria y revisión; un conflicto pide actualizar. Los cambios de estado deben usar este RPC: actualizar clientes anteriores para evitar errores de permisos al marcar entregado. Las pantallas de grupo consultan novedades cada 20 segundos solo mientras están enfocadas y la app está activa, sin nuevas notificaciones ni Realtime. Pruebas: `tests/gift_reservations.sql` y los archivos Node de coincidencias y refresco.
 
 Actualización del 25 de octubre de 2026: aplicada `migrations/202610250007_group_social.sql`. Añade disponibilidad por fecha y franja, planes y regalos con respuestas únicas por persona, y el bucket privado `group-media`. Solo miembros actuales pueden acceder; cada persona modifica sus propias marcas y respuestas, y solo la autora puede retirar publicaciones o marcar regalos como entregados. La pestaña Amigas sustituye a Suscripciones. El calendario personal no se comparte.
 

@@ -1,6 +1,6 @@
 # My Hub
 
-Aplicación cultural en español, compatible con Expo SDK 54 y Expo Go SDK 54.
+Aplicación cultural en español, compatible con Expo SDK 58 y Expo Go SDK 58.
 
 ## Primera versión local
 
@@ -28,6 +28,11 @@ npx expo start --go --localhost --port 8083
 ```
 
 Mantener el cable conectado y Metro encendido. Cambiar el puerto en ambos comandos si fuera necesario.
+
+Si después de actualizar el SDK aparece `Cannot find native module 'ExpoCrypto'`,
+reinicia Expo Go y arranca Metro con la caché limpia: `npm start -- --clear`.
+Verifica las dependencias con `npx expo install --check` si persiste. No hace
+falta borrar los datos de Expo Go para limpiar la caché de Metro.
 
 ## Cuentas Supabase
 
