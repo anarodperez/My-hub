@@ -9,7 +9,7 @@ import type { GroupRow } from '@/features/hub/backend-types';
 export function ShareDiscovery({ post, onShared }: { post: Recommendation; onShared: () => Promise<void> }) {
   const { repository, refresh } = useHub();
   const p = usePalette();
-  const current = useRef(repository); current.current = repository;
+  const current = useRef(repository);
   useEffect(() => { current.current = repository; return () => { current.current = null; }; }, [repository]);
   const [open, setOpen] = useState(false);
   const [groups, setGroups] = useState<GroupRow[]>([]);

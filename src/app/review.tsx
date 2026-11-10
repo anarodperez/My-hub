@@ -1,3 +1,4 @@
+import { goBackOr } from '@/features/hub/navigation';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Copy, Field, SaveAction, Screen, TextAction } from '@/components/hub-ui';
@@ -7,7 +8,7 @@ import { useHub } from '@/features/hub/provider';
 export default function ReviewScreen() {
   const { id, saved } = useLocalSearchParams<{ id: string; saved?: string }>();
   const { state, repository, refresh, loading } = useHub();
-  const current = useRef(repository); current.current = repository;
+  const current = useRef(repository);
   useEffect(() => { current.current = repository; return () => { current.current = null; }; }, [repository]);
   const item = saved === '1' ? state.recommendations.find(row => row.id === id) : state.wishes?.find(row => row.id === id);
   const [opinion, setOpinion] = useState('');
@@ -35,7 +36,7 @@ export default function ReviewScreen() {
       <Field label="¿Qué te ha parecido?" value={opinion} onChangeText={setOpinion} multiline maxLength={2000} editable={!busy} placeholder="Lo que te ha gustado, sin spoilers…" />
       {!!error && <Copy accessibilityRole="alert">{error}</Copy>}
       <SaveAction busy={busy} disabled={!opinion.trim()} onPress={() => { void save(); }}>Guardar y marcar cumplido</SaveAction>
-      <TextAction disabled={busy} onPress={() => router.back()}>Cancelar</TextAction>
+      <TextAction disabled={busy} onPress={() => goBackOr('/library')}>Cancelar</TextAction>
     </>}
   </Screen>;
 }

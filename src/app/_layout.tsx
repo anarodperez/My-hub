@@ -19,7 +19,10 @@ function Navigation() {
     <Stack screenOptions={{ animation: reducedMotion ? 'none' : 'default', headerShown: false, contentStyle: { backgroundColor: p.background } }}>
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="compose" />
+        <Stack.Screen name="compose" options={({ route }) => {
+          const event = (route.params as { kind?: string } | undefined)?.kind === 'event';
+          return { presentation: event ? 'transparentModal' : 'card', animation: event || reducedMotion ? 'none' : 'default', contentStyle: { backgroundColor: event ? 'transparent' : p.background } };
+        }} />
         <Stack.Screen name="settings" />
         <Stack.Screen name="wish" />
         <Stack.Screen name="review" />
@@ -28,7 +31,10 @@ function Navigation() {
         <Stack.Screen name="groups" />
         <Stack.Screen name="group/[id]" />
         <Stack.Screen name="group-space" />
-        <Stack.Screen name="group-post" />
+        <Stack.Screen name="group-post" options={({ route }) => {
+          const plan = (route.params as { kind?: string } | undefined)?.kind === 'plan';
+          return { presentation: plan ? 'transparentModal' : 'card', animation: plan || reducedMotion ? 'none' : 'default', contentStyle: { backgroundColor: plan ? 'transparent' : p.background } };
+        }} />
       </Stack.Protected>
       <Stack.Screen name="account" />
     </Stack>

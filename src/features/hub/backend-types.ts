@@ -1,4 +1,5 @@
 import type { Category, ThemePreference } from './model.ts';
+import type { WishlistOrganization } from './wishlist-collections.ts';
 
 export type Visibility = 'private' | 'public' | 'group';
 export type Versioned = { id: string; revision: number; updated_at: string };
@@ -14,7 +15,7 @@ export type EventInput = { title: string; category: Category; event_date: string
 export type EventRow = EventInput & Versioned & { owner_id: string };
 export type SongInput = { title: string; artist: string; cover_path?: string; link?: string | null };
 export type SongRow = SongInput & Versioned;
-export type PreferencesInput = { theme?: ThemePreference; wishlist_visibility?: 'private' | 'public' };
+export type PreferencesInput = { theme?: ThemePreference; wishlist_visibility?: 'private' | 'public'; wishlist_organization?: WishlistOrganization };
 export type PreferencesRow = PreferencesInput & Versioned;
 export type Edit<T> = T & { id?: string; newId?: string; revision?: number };
 export type GroupRow = { id: string; owner_id: string; name: string; created_at: string; group_members?: { count: number }[] };

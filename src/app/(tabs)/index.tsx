@@ -5,18 +5,20 @@ import { BookOpenIcon } from '@/components/hub-icons';
 import { AddAction, CategoryIcon, Copy, Empty, Screen, TextAction } from '@/components/hub-ui';
 import { RecommendationCard } from '@/components/recommendation-card';
 import { MomentSong } from '@/components/moment-song';
+import { FeedPlaceholder } from '@/components/feed-placeholder';
 import { HomePlans } from '@/components/home-plans';
 import { recommendationCategories, type Category } from '@/features/hub/model';
 import { useHub, usePalette } from '@/features/hub/provider';
 import { getHubLayout } from '@/features/hub/layout';
 import { useDiscoveryFeed } from '@/hooks/use-discovery-feed';
+import { useViewState } from '@/hooks/use-view-state';
 
 export default function HomeScreen() {
   const { state } = useHub();
   const p = usePalette();
   const { width, fontScale } = useWindowDimensions();
-  const { feedColumns, contentWidth } = getHubLayout(width, fontScale);
-  const [category, setCategory] = useState<Category | 'all'>('all');
+  const { feedColumns, feedWidth } = getHubLayout(width, fontScale);
+  const [category, setCategory] = useViewState<Category | 'all'>('home.category', 'all');
   const feed = useDiscoveryFeed(category);
   const [plansRefresh, setPlansRefresh] = useState(0);
   const options = [{ value: 'all' as const, label: 'Todo' }, ...recommendationCategories];
@@ -41,15 +43,15 @@ export default function HomeScreen() {
       data={feed.items}
       keyExtractor={item => item.id}
       numColumns={feedColumns}
-      style={{ flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' }}
+      style={{ flex: 1, width: '100%' }}
       contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40, flexGrow: 1 }}
       columnWrapperStyle={feedColumns > 1 ? { gap: 16 } : undefined}
-      renderItem={({ item }) => <View style={{ width: feedColumns === 1 ? '100%' : (contentWidth - (feedColumns - 1) * 16) / feedColumns }}><RecommendationCard item={item} feed /></View>}
+      renderItem={({ item }) => <View style={{ width: feedColumns === 1 ? '100%' : (feedWidth - (feedColumns - 1) * 16) / feedColumns }}><RecommendationCard item={item} feed grid={feedColumns > 1} /></View>}
       ListHeaderComponent={<View style={{ gap: 16, marginBottom: 20 }}>{heading}{header}</View>}
       ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-      ListEmptyComponent={!feed.loading && !feed.error ? <Empty icon={<BookOpenIcon color={p.accent} size={30} weight="duotone" />} title="Tu próximo descubrimiento va aquí" description="Un libro que no sueltas, una compra que te encanta o un sitio al que volverías." action={<TextAction onPress={() => router.push({ pathname: '/compose', params: { kind: 'recommendation' } })}>Añadir una recomendación</TextAction>} /> : undefined}
+      ListEmptyComponent={feed.loading ? <FeedPlaceholder columns={feedColumns} /> : !feed.error ? <Empty icon={<BookOpenIcon color={p.accent} size={30} weight="duotone" />} title="Tu próximo descubrimiento va aquí" description="Un libro que no sueltas, una compra que te encanta o un sitio al que volverías." action={<TextAction onPress={() => router.push({ pathname: '/compose', params: { kind: 'recommendation' } })}>Añadir una recomendación</TextAction>} /> : undefined}
       ListFooterComponent={<View style={{ paddingVertical: 24, gap: 12, alignItems: 'center' }}>
-        {feed.loading && !feed.refreshing && <ActivityIndicator color={p.accent} accessibilityLabel="Cargando descubrimientos" />}
+        {feed.loading && !!feed.items.length && !feed.refreshing && <ActivityIndicator color={p.accent} accessibilityLabel="Cargando descubrimientos" />}
         {!!feed.error && <><Copy accessibilityRole="alert" style={{ textAlign: 'center' }}>No se pudieron cargar los descubrimientos. Los que ya tienes siguen aquí.</Copy><TextAction onPress={feed.retry}>Volver a intentar</TextAction></>}
         {!feed.loading && !feed.error && !feed.hasMore && !!feed.items.length && <Copy muted style={{ fontSize: 13 }}>Estás al día. Desliza hacia abajo para actualizar.</Copy>}
       </View>}

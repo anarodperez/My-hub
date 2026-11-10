@@ -2,6 +2,7 @@ import type { HubRepository } from './repository.ts';
 import type { createCloudCovers } from './cloud-covers.ts';
 import { emptyState, type HubState, type Recommendation, type Wish } from './model.ts';
 import type { RecommendationRow } from './backend-types.ts';
+import { validOrganization } from './wishlist-collections.ts';
 
 export type CloudMedia = ReturnType<typeof createCloudCovers>;
 export async function mapRecommendation(row: RecommendationRow, media: CloudMedia): Promise<Recommendation> {
@@ -12,12 +13,14 @@ export async function mapRecommendation(row: RecommendationRow, media: CloudMedi
 }
 export async function loadCloudState(repo: HubRepository, media: CloudMedia) {
   const data = await repo.loadPrivate();
+  if (data.preferences?.wishlist_organization && !validOrganization(data.preferences.wishlist_organization)) throw new Error('No se pudieron leer tus colecciones. Tus deseos siguen guardados.');
   const feed = await repo.listDiscoveries();
   const savedPosts = await repo.getSavedRecommendations(data.wishlist.flatMap((entry) => entry.recommendation_id ? [entry.recommendation_id] : []));
   const allPosts = [...new Map([...feed, ...data.recommendations, ...savedPosts].map((row) => [row.id, row])).values()];
   const state: HubState = { ...emptyState,
     preferences: { name: data.profile?.name || '', theme: data.preferences?.theme || 'system', ...(data.profile?.avatar_path ? { avatarUri: await media.resolve(data.profile.avatar_path).catch(() => '') } : {}) },
     wishlistVisibility: data.preferences?.wishlist_visibility || 'private',
+    ...(data.preferences?.wishlist_organization ? { wishlistOrganization: data.preferences.wishlist_organization } : {}),
     recommendations: await hydrateRecommendations(repo, media, allPosts),
     saved: data.wishlist.flatMap((row) => row.recommendation_id ? [{ recommendationId: row.recommendation_id, status: row.status || 'pending' }] : []),
     wishes: await Promise.all(data.wishlist.filter((row) => !row.recommendation_id).map(async (row): Promise<Wish> => ({ id: row.id, revision: row.revision, title: row.title, category: row.category, coverPath: row.cover_path || '', coverUrl: await media.resolve(row.cover_path || '').catch(() => ''), completed: row.status === 'finished', ...(row.link ? { link: row.link } : {}) }))),
@@ -79,7 +82,7 @@ export async function applyCloudChange(before: HubState, after: HubState, repo: 
     }
     else if (before.song) await repo.deleteEntity('song', repo.accountId, before.song.revision);
   }
-  if (before.preferences.theme !== after.preferences.theme || before.wishlistVisibility !== after.wishlistVisibility) nextPreferences = await repo.savePreferences({ ...(preferences ? { id: preferences.id, revision: preferences.revision } : {}), theme: after.preferences.theme, wishlist_visibility: after.wishlistVisibility || 'private' });
+  if (before.preferences.theme !== after.preferences.theme || before.wishlistVisibility !== after.wishlistVisibility || different(before.wishlistOrganization, after.wishlistOrganization)) nextPreferences = await repo.savePreferences({ ...(preferences ? { id: preferences.id, revision: preferences.revision } : {}), theme: after.preferences.theme, wishlist_visibility: after.wishlistVisibility || 'private', ...(after.wishlistOrganization ? { wishlist_organization: after.wishlistOrganization } : {}) });
   if (before.preferences.name !== after.preferences.name || before.preferences.avatarUri !== after.preferences.avatarUri) {
     await repo.saveProfile({ ...(before.preferences.name !== after.preferences.name ? { name: after.preferences.name } : {}), ...(before.preferences.avatarUri !== after.preferences.avatarUri ? { avatar_path: after.preferences.avatarUri ? await media.upload(repo.accountId, 'avatar', after.preferences.avatarUri) : null } : {}) });
   }

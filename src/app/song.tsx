@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { goBackOr } from '@/features/hub/navigation';
 import { useState } from 'react';
 import { CoverPicker } from '@/components/cover-picker';
 import { Copy, Field, Screen, TextAction, showError, SaveAction } from '@/components/hub-ui';
@@ -35,7 +35,7 @@ function SongEditor({ existing }: { existing?: HubState['song'] }) {
       if (coverUrl && coverUrl !== existing?.coverUrl) savedCover = await persistCover(coverUrl);
       await update((previous) => ({ ...previous, song: { title: title.trim(), artist: artist.trim(), coverUrl: savedCover, ...(link.trim() ? { link: link.trim() } : {}) } }));
       if (existing?.coverUrl && existing.coverUrl !== savedCover) discardCover(existing.coverUrl);
-      router.back();
+      goBackOr('/settings');
     } catch { if (savedCover !== coverUrl) discardCover(savedCover); showError(); } finally { setBusy(false); }
   };
   const remove = async () => {
@@ -44,7 +44,7 @@ function SongEditor({ existing }: { existing?: HubState['song'] }) {
     try {
       await update((previous) => ({ ...previous, song: undefined }));
       if (existing?.coverUrl) discardCover(existing.coverUrl);
-      router.back();
+      goBackOr('/settings');
     } catch { showError(); } finally { setBusy(false); }
   };
   return <Screen back title="Mi canción del momento" subtitle="Esa que tienes en bucle. Cámbiala cuando quieras.">

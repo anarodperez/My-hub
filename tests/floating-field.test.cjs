@@ -15,7 +15,7 @@ function field(props = {}, fontScale = 1) {
     usePalette: () => palette, useWindowDimensions: () => ({ fontScale }),
     View: 'View', MotionReveal: 'MotionReveal', TextInput: 'Input', Copy: 'Copy', isLoaded: () => false, s: { input: {} },
   });
-  const render = () => { index = 0; return exports.Field({ label: 'Correo', placeholder: 'tu@correo.com', ...props }); };
+  const render = () => { index = 0; return exports.Field({ label: 'Correo', placeholder: 'tu@correo.com', variant: 'floating', ...props }); };
   const find = (node, type) => { if (!node || typeof node !== 'object') return; if (node.type === type) return node; for (const child of [node.props?.children].flat(Infinity)) { const found = find(child, type); if (found) return found; } };
   return { render, input: tree => find(tree, 'Input'), label: tree => find(tree, 'Copy') };
 }
@@ -47,6 +47,17 @@ test('la etiqueta permanece elevada con valor controlado, por defecto o escrito'
   const form = field({ onChangeText: text => { changed = text; } });
   form.input(form.render()).props.onChangeText('Ana');
   assert.equal(form.label(form.render()).props.style.fontSize, 11); assert.equal(changed, 'Ana');
+});
+
+test('los campos delineados muestran etiqueta fija y placeholder sin solaparse', () => {
+  const form = field({ variant: 'outlined', value: 'Una tarde de cine' });
+  const tree = form.render();
+  assert.equal(form.input(tree).props.placeholder, 'tu@correo.com');
+  const style = Object.assign({}, ...form.input(tree).props.style.filter(Boolean));
+  assert.equal(style.borderWidth, 1);
+  assert.equal(style.backgroundColor, 'surface');
+  assert.equal(style.outlineWidth, 0);
+  assert.equal(form.label(tree).props.children, 'Correo');
 });
 test('los campos crecen con texto ampliado y mantienen sitio para contraseñas y errores', () => {
   const compact = field();

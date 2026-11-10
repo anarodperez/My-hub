@@ -12,7 +12,7 @@ export default function GroupScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { repository, refresh } = useHub();
   const p = usePalette();
-  const current = useRef(repository); current.current = repository;
+  const current = useRef(repository);
   const [group, setGroup] = useState<GroupRow>();
   const [members, setMembers] = useState<Author[]>([]);
   const [token, setToken] = useState('');

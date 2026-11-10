@@ -5,6 +5,30 @@ const { emptyState } = require('../src/features/hub/model.ts');
 const owner = '10000000-0000-4000-8000-000000000001';
 const post = { id: '20000000-0000-4000-8000-000000000001', ownerId: owner, revision: 2, title: 'Libro', category: 'book', opinion: 'Me gusta', rating: 5, coverUrl: 'https://signed.example/cover', coverPath: owner + '/post/cover.jpg', createdAt: '2026-10-14T12:00:00Z', visibility: 'group', groupId: '30000000-0000-4000-8000-000000000001' };
 const media = { upload: async () => { throw new Error('Unexpected upload'); } };
+
+test('colecciones se guardan solas con control de revision y sin tocar deseos', async () => {
+  const organization = { collections: [{ id: 'personal', name: 'Para mí' }], assignments: { 'wish:wish-1': 'personal' } };
+  const before = { ...emptyState, wishes: [{ id: 'wish-1', title: 'Lámpara', category: 'product', coverUrl: '', completed: false }] };
+  const writes = [];
+  const saved = await applyCloudChange(before, { ...before, wishlistOrganization: organization }, {
+    accountId: owner, savePreferences: async input => { writes.push(input); return { id: owner, revision: 8 }; },
+  }, media, { id: owner, revision: 7 });
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].revision, 7);
+  assert.deepEqual(writes[0].wishlist_organization, organization);
+  assert.deepEqual(saved.state.wishes, before.wishes);
+  assert.equal(saved.preferences.revision, 8);
+});
+
+test('cargar colecciones conserva asignaciones y una cuenta antigua sigue cargando', async () => {
+  const organization = { collections: [{ id: 'gifts', name: 'Regalos' }], assignments: {} };
+  for (const preferences of [{ wishlist_organization: organization }, undefined]) {
+    const { state } = await loadCloudState({ loadPrivate: async () => ({ recommendations: [], wishlist: [], events: [], preferences }),
+      listDiscoveries: async () => [], getSavedRecommendations: async () => [], listCommentPreviews: async () => [],
+    }, { resolve: async () => '' });
+    assert.deepEqual(state.wishlistOrganization, preferences ? organization : undefined);
+  }
+});
 test('inicio conserva previews y recuento de publicaciones propias, resuelve autores una vez', async () => {
   const row = { id: post.id, owner_id: owner, revision: 2, title: 'Libro', category: 'book', opinion: 'Me gusta', rating: 5, created_at: post.createdAt };
   const authors = [], batches = [];

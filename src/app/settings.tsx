@@ -1,7 +1,7 @@
 import { router, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
 import { BookmarkSimpleIcon, CalendarBlankIcon, CheckIcon, DeviceMobileIcon, MoonIcon, PencilSimpleIcon, SunIcon, TrashIcon, CaretRightIcon, LockSimpleIcon, XIcon } from '@/components/hub-icons';
 import { SignOutIcon } from 'phosphor-react-native/src/icons/SignOut';
@@ -24,6 +24,8 @@ function ProfileEditor() {
   const { state, update } = useHub();
   const { session } = useAccount();
   const p = usePalette();
+  const { width, fontScale } = useWindowDimensions();
+  const sideBySide = width >= 1100 && fontScale <= 1.3;
   const [name, setName] = useState(state.preferences.name);
   const [editing, setEditing] = useState(!state.preferences.name);
   const [busy, setBusy] = useState(false);
@@ -77,7 +79,9 @@ function ProfileEditor() {
       setSaved(true); setEditing(false);
     } catch { showError(); } finally { setBusy(false); }
   };
-  return <Screen back title="Mi cuenta">
+  return <Screen wide back title="Mi cuenta">
+    <View style={{ flexDirection: sideBySide ? 'row' : 'column', gap: 32, alignItems: 'flex-start' }}>
+    <View style={{ width: sideBySide ? '34%' : '100%', gap: 24 }}>
     <View style={v.identity}>
       <View style={{ padding: 7, borderRadius: 70, borderWidth: 1, borderColor: p.line }}>
         <Pressable disabled={photoBusy} accessibilityRole="button" accessibilityLabel={state.preferences.avatarUri ? 'Cambiar foto de perfil' : 'Añadir foto de perfil'} accessibilityState={{ disabled: photoBusy, busy: photoBusy }} onPress={() => { void changePhoto(); }} style={({ pressed }) => ({ opacity: photoBusy ? 0.5 : pressed ? 0.7 : 1 })}>
@@ -101,6 +105,8 @@ function ProfileEditor() {
     <View style={[v.stats, { borderColor: p.line }]}>
       {[{ label: 'Publicaciones', count: state.recommendations.filter((item) => !item.sample && (!item.ownerId || item.ownerId === session?.user.id)).length, route: '/' as const }, { label: 'Deseos', count: pending, route: '/library' as const }, { label: 'Eventos', count: state.events.length, route: '/calendar' as const }].map((item, index) => <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={`${item.count} ${item.label.toLowerCase()}. Ver lista`} onPress={() => router.push(item.route as Href)} style={({ pressed }) => ({ flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 4, borderLeftWidth: index ? 1 : 0, borderColor: p.line, opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 24, lineHeight: 30, fontWeight: '600' }}>{item.count}</Copy><Copy muted style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>{item.label}</Copy></Pressable>)}
     </View>
+    </View>
+    <View style={{ flex: sideBySide ? 1 : undefined, width: sideBySide ? undefined : '100%', gap: 24 }}>
     <View style={v.section}>
       <Section title="Tu espacio" />
       <View style={{ backgroundColor: p.surface, borderRadius: 16, overflow: 'hidden' }}>
@@ -131,6 +137,8 @@ function ProfileEditor() {
     <View style={[v.section, { borderTopWidth: 1, borderColor: p.line, paddingTop: 20 }]}>
       <TextAction danger disabled={busy || photoBusy || signingOut} icon={<SignOutIcon size={22} color={p.danger} />} onPress={() => { void signOut(); }}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</TextAction>
       {!!sessionError && <Copy accessibilityRole="alert" style={{ color: p.danger }}>{sessionError}</Copy>}
+    </View>
+    </View>
     </View>
   </Screen>;
 }

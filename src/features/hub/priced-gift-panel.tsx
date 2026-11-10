@@ -44,7 +44,7 @@ export function PricedGiftPanel({ post, members, accountId, now, busy, onBid, on
       <Action disabled={busy} onPress={() => { if (auction) onBid(confirming); else onReserve(); setConfirming(null); }}>{auction ? 'Confirmar puja' : 'Confirmar reserva'}</Action>
       <TextAction disabled={busy} onPress={() => setConfirming(null)}>Cancelar</TextAction>
     </View> : <View style={{ gap: 10 }}>
-      {auction && <Field label={`Tu puja (€) · mínimo ${offerPrice(minimum)}`} placeholder={(minimum / 100).toFixed(2).replace('.', ',')} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" maxLength={9} editable={!busy} />}
+      {auction && <Field variant="outlined" label={`Tu puja (€) · mínimo ${offerPrice(minimum)}`} placeholder={(minimum / 100).toFixed(2).replace('.', ',')} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" maxLength={9} editable={!busy} />}
       <Action disabled={busy || (auction && minimum > 99999999)} onPress={prepare}>{auction ? 'Revisar mi puja' : `Me lo quedo por ${offerPrice(current)}`}</Action>
     </View>}
     {!!error && <Copy accessibilityRole="alert" style={{ color: p.danger }}>{error}</Copy>}

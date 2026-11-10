@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isLocalDate, isRating, isWebLink, recommendationCategories } from './model.ts';
+import { validOrganization } from './wishlist-collections.ts';
 import type { AvailabilityPeriod, AvailabilityRow, GroupPostInput, GroupPostKind, GroupPostRow, Author, CommentRow, Edit, EventInput, EventRow, GroupRow, PreferencesInput, PreferencesRow, RecommendationInput, RecommendationRow, SongInput, SongRow, WishInput, WishlistRow } from './backend-types.ts';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -109,6 +110,10 @@ export function createHubRepository(client: SupabaseClient, accountId: string) {
       const payload: Record<string, unknown> = {};
       if (input.theme !== undefined) payload.theme = input.theme;
       if (input.wishlist_visibility !== undefined) payload.wishlist_visibility = input.wishlist_visibility;
+      if (input.wishlist_organization !== undefined) {
+        if (!validOrganization(input.wishlist_organization)) throw new Error('Colecciones no válidas.');
+        payload.wishlist_organization = input.wishlist_organization;
+      }
       return save<PreferencesRow>('user_preferences', input, payload, true);
     },
     async saveProfile(input: { name?: string; avatar_path?: string | null }) {

@@ -1,5 +1,7 @@
 # Conectar cuentas
 
+Colecciones de Wishlist (10 de noviembre de 2026): aplicada `migrations/202611100001_wishlist_collections.sql`. La columna opcional `user_preferences.wishlist_organization` guarda colecciones y asignaciones en la cuenta privada con el control de revisión existente. Los deseos anteriores quedan sin colección; retirar una colección no borra deseos. La migración es aditiva y repetible; los clientes anteriores preservan la columna al editar preferencias. Para volver al cliente anterior, conservar esta columna y sus datos. `tests/wishlist_collections.sql` usa únicamente una tabla temporal para verificar la forma y compatibilidad, y comprueba que RLS y la política de propietario sigan activas; no crea ni modifica cuentas reales.
+
 1. En Supabase, abrir SQL Editor y ejecutar `migrations/202610140001_profiles.sql` una sola vez. Es una transacción: si falla, no queda aplicada parcialmente. No usar la clave pública para intentar administrar el esquema.
 2. En Authentication, mantener proveedor Email y confirmación de correo activados. El formulario exige un mínimo de seis caracteres; si se configura una política más estricta, actualizar la validación local para explicar esos requisitos. Supabase siempre aplica su política del servidor.
 3. En las plantillas **Confirm signup** y **Reset password**, incluir `<p>Tu código de My Hub: {{ .Token }}</p>`. Guardar ambas plantillas. La app permite introducir el código sin depender de enlaces de Expo Go; no fijar su longitud en el formulario.
