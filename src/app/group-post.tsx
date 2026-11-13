@@ -80,14 +80,14 @@ function GroupPostForm({ groupId, kind, initialDate, initialTitle, initialDescri
     <View style={{ width: '100%', maxWidth: kind === 'plan' ? 800 : undefined, alignSelf: 'center', gap: 20 }}>
     {kind === 'plan' ? <View style={{ backgroundColor: p.surface, borderRadius: 20, padding: width >= 700 ? 32 : 20, gap: 24 }}>
       <View style={{ gap: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}><View style={{ flex: 1, gap: 8 }}><Copy accessibilityRole="header" style={{ fontSize: 28, lineHeight: 36, fontWeight: '700' }}>Proponer un plan</Copy><Copy muted style={{ fontSize: 16, lineHeight: 24 }}>Una idea, una fecha y ganas de veros.</Copy></View><IconAction label="Cerrar formulario de plan" disabled={busy} onPress={leave}><XIcon size={24} color={p.muted} /></IconAction></View>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}><View style={{ flex: 1, gap: 8 }}><Copy accessibilityRole="header" style={{ fontSize: 28, lineHeight: 36, fontWeight: '700' }}>Proponer un plan</Copy><Copy muted style={{ fontSize: 16, lineHeight: 24 }}>Un plan concreto para salir del bucle de «lo que queráis».</Copy></View><IconAction label="Cerrar formulario de plan" disabled={busy} onPress={leave}><XIcon size={24} color={p.muted} /></IconAction></View>
         {!!groupName && <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}><View style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: p.soft }}><Copy style={{ fontSize: 14, color: p.accent, fontWeight: '600' }}>{groupName}</Copy></View><Privacy>Solo para este grupo</Privacy></View>}
       </View>
       {checking && <ActivityIndicator color={p.accent} accessibilityLabel="Comprobando grupo" />}
       {!!groupName && <>
         <Field variant="outlined" label="¿Qué os apetece hacer?" placeholder="Por ejemplo, una tarde de cine" value={title} onChangeText={setTitle} maxLength={150} editable={!busy} />
         <PlanDateField value={date} onChange={setDate} disabled={busy} />
-        <Field variant="outlined" label="Detalles (opcional)" placeholder="¿Dónde quedáis? ¿A qué hora? Comparte lo que ayude a organizaros." value={description} onChangeText={setDescription} maxLength={2000} multiline editable={!busy} />
+        <Field variant="outlined" label="Detalles (opcional)" placeholder="Lugar, hora… y si hay que llevar palomitas." value={description} onChangeText={setDescription} maxLength={2000} multiline editable={!busy} />
         <View style={{ borderTopWidth: 1, borderColor: p.line, paddingTop: 20, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <TextAction disabled={busy} onPress={leave}>Cancelar</TextAction>
           <Action disabled={busy || !title.trim()} icon={busy ? <ActivityIndicator size="small" color={p.onAccent} /> : <PlusIcon size={18} color={p.onAccent} />} onPress={() => { void publish(); }}>{busy ? 'Publicando…' : 'Publicar plan'}</Action>

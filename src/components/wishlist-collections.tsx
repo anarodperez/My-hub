@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { BookmarkSimpleIcon, PlusIcon, PencilSimpleIcon } from './hub-icons';
 import { Copy, Field, IconAction, SaveAction, TextAction } from './hub-ui';
+import { LoadingImage } from './loading-image';
 import { useHub, usePalette } from '@/features/hub/provider';
 import { removeCollection, validOrganization, wishlistOrganization } from '@/features/hub/wishlist-collections';
 import { selectWishlist } from '@/features/hub/wishlist';
@@ -15,6 +16,7 @@ export function WishlistCollections({ value, onChange, vertical }: { value: stri
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [failedCovers, setFailedCovers] = useState<string[]>([]);
   const selected = organization.collections.find(c => c.id === value);
   const options = [{ id: 'all', name: 'Todo' }, ...organization.collections, { id: 'unassigned', name: 'Sin colección' }];
   const start = (id: string, currentName = '') => { setEditing(id); setName(currentName); setError(''); };
@@ -45,14 +47,19 @@ export function WishlistCollections({ value, onChange, vertical }: { value: stri
       <Copy accessibilityRole="header" style={{ fontSize: 18, fontWeight: '600' }}>Colecciones</Copy>
       <IconAction label="Crear colección" disabled={busy} onPress={() => start('new')}><PlusIcon size={21} color={p.accent} /></IconAction>
     </View>
-    <ScrollView horizontal={!vertical} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: vertical ? 'column' : 'row', gap: 6 }}>
+    <ScrollView horizontal={!vertical} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: vertical ? 'column' : 'row', gap: 4, paddingBottom: 4 }}>
       {options.map(option => {
-        const count = selectWishlist(state, 'pending', 'all', option.id).counts;
+        const pending = selectWishlist(state, 'pending', 'all', option.id);
+        const finished = selectWishlist(state, 'finished', 'all', option.id);
+        const count = pending.counts;
+        const cover = option.id === 'all' || option.id === 'unassigned' ? undefined : [...pending.wishes, ...pending.recommendations, ...finished.wishes, ...finished.recommendations].find(item => item.coverUrl && !failedCovers.includes(item.coverUrl));
         const active = option.id === value;
-        return <Pressable key={option.id} disabled={busy} accessibilityRole="tab" accessibilityState={{ selected: active, disabled: busy }} onPress={() => onChange(option.id)} style={({ pressed }) => ({ minHeight: 48, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: active || pressed ? p.soft : 'transparent' })}>
-          <BookmarkSimpleIcon size={18} weight={active ? 'fill' : 'regular'} color={active ? p.accent : p.muted} />
-          <Copy numberOfLines={vertical ? undefined : 1} style={{ flex: vertical ? 1 : undefined, fontSize: 14, fontWeight: active ? '700' : '400', color: active ? p.accent : p.text }}>{option.name}</Copy>
-          <Copy style={{ fontSize: 12, color: active ? p.accent : p.muted }}>{count.pending + count.finished}</Copy>
+        return <Pressable key={option.id} disabled={busy} accessibilityRole="tab" accessibilityLabel={`${option.name}, ${count.pending + count.finished} deseos`} accessibilityState={{ selected: active, disabled: busy }} onPress={() => onChange(option.id)} style={({ pressed }) => ({ width: vertical ? '100%' : 200, minHeight: 64, borderRadius: 10, padding: 10, gap: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: active || pressed ? p.soft : 'transparent', opacity: busy ? 0.5 : pressed ? 0.75 : 1 })}>
+          <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ height: 44, width: 36, borderRadius: 6, overflow: 'hidden', backgroundColor: active ? p.surface : p.soft, alignItems: 'center', justifyContent: 'center' }}>
+            {cover ? <LoadingImage source={cover.coverUrl} contentFit="contain" onError={() => setFailedCovers(previous => [...previous, cover.coverUrl])} style={{ width: 36, height: 44 }} /> : <BookmarkSimpleIcon size={20} weight={active ? 'fill' : 'regular'} color={p.accent} />}
+          </View>
+          <Copy style={{ flex: 1, fontSize: 14, fontWeight: active ? '700' : '400', color: active ? p.accent : p.text }}>{option.name}</Copy>
+          <Copy style={{ fontSize: 12, lineHeight: 18, color: active ? p.accent : p.muted }}>{count.pending + count.finished}</Copy>
         </Pressable>;
       })}
     </ScrollView>

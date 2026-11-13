@@ -6,6 +6,7 @@ const ts = require('typescript');
 
 test('actualizar conserva el calendario montado y revocar membresía retira datos privados', async () => {
   let index = 0, deferred, nextGroups = [{ id: 'friends', name: 'Amigas' }];
+  const routes = [];
   const slots = [], focused = [];
   const components = new Proxy({}, { get: (_, name) => name });
   const repository = { accountId: 'ana', listGroups: () => deferred || Promise.resolve(nextGroups), listMembers: async () => [], listAvailability: async () => [] };
@@ -15,7 +16,8 @@ test('actualizar conserva el calendario montado y revocar membresía retira dato
   };
   const mocks = { react, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { View: 'View', ActivityIndicator: 'ActivityIndicator', useWindowDimensions: () => ({ width: 1440, fontScale: 1 }) },
-    'expo-router': { useFocusEffect: fn => focused.push(fn) }, '@/features/hub/provider': { useHub: () => ({ repository, media: {} }), usePalette: () => ({}) },
+    'expo-router': { useFocusEffect: fn => focused.push(fn), router: { navigate: route => routes.push(route) } }, '@/features/hub/provider': { useHub: () => ({ repository, media: {} }), usePalette: () => ({}) },
+    '@/features/hub/layout': require('../src/features/hub/layout.ts'),
     '@/features/hub/model': require('../src/features/hub/model.ts'), '@/hooks/use-group-auto-refresh': { useGroupAutoRefresh() {} },
   };
   const exports = {};
@@ -25,6 +27,11 @@ test('actualizar conserva el calendario montado y revocar membresía retira dato
   const render = () => { index = 0; return all(exports.GroupSpace({ id: 'friends', initialTab: 'availability' })); };
   render(); focused.splice(0).forEach(fn => fn()); await new Promise(setImmediate);
   let nodes = render(); assert.ok(nodes.some(n => n.type === 'GroupAvailability'));
+  const header = nodes.find(n => n.type === 'GroupHeader');
+  assert.ok(header, 'group sections must be visible without opening the options menu');
+  header.props.onTabChange('people');
+  assert.equal(routes[0].pathname, '/group/[id]');
+  assert.equal(routes[0].params.id, 'friends');
   let resolve;
   deferred = new Promise(done => { resolve = done; });
   nodes.find(n => n.type === 'Screen').props.onRefresh();

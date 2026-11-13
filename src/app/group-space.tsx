@@ -5,7 +5,9 @@ import { LoadingImage as Image } from '@/components/loading-image';
 import { ActivityIndicator, Alert, Platform, View, useWindowDimensions } from 'react-native';
 import { GiftIcon } from 'phosphor-react-native/src/icons/Gift';
 import { CalendarBlankIcon, PlusIcon } from '@/components/hub-icons';
-import { Action, ChoiceTabs, Copy, Privacy, Screen, Surface, TextAction } from '@/components/hub-ui';
+import { Action, Copy, Screen, Surface, TextAction } from '@/components/hub-ui';
+import { GroupHeader } from '@/components/group-header';
+import { getHubLayout } from '@/features/hub/layout';
 import { ItemActions } from '@/components/item-actions';
 import { GroupAvailability } from '@/features/hub/group-availability';
 import { GiftDrawPanel } from '@/features/hub/gift-draw-panel';
@@ -21,19 +23,20 @@ type Tab = 'availability' | 'plan' | 'gift';
 export default function GroupSpaceScreen() {
   const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { repository } = useHub();
-  return <GroupSpace key={`${repository?.accountId}:${id}:${tab}`} id={id} initialTab={tab === 'plan' || tab === 'gift' ? tab : 'availability'} />;
+  return <GroupSpace key={`${repository?.accountId}:${id}:${tab}`} id={id} initialTab={tab === 'availability' || tab === 'gift' ? tab : 'plan'} />;
 }
 function GroupSpace({ id, initialTab }: { id: string; initialTab: Tab }) {
   const { repository, media } = useHub();
   const p = usePalette();
   const { width, fontScale } = useWindowDimensions();
-  const contentWidth = Math.max(0, Math.min(1280, width - 48));
+  const contentWidth = getHubLayout(width, fontScale).contentWidth;
   const postColumns = fontScale > 1.3 ? 1 : Math.max(1, Math.min(3, Math.floor((contentWidth + 20) / 380)));
   const [tab, setTab] = useState<Tab>(initialTab);
   const postWidth = tab === 'plan' || postColumns === 1 ? '100%' as const : (contentWidth - (postColumns - 1) * 20) / postColumns;
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [selected, setSelected] = useState(() => localDate(new Date()));
   const [name, setName] = useState('');
+  const [coverKey, setCoverKey] = useState<string | null>(null);
   const [members, setMembers] = useState<Author[]>([]);
   const [availability, setAvailability] = useState<AvailabilityRow[]>([]);
   const [posts, setPosts] = useState<GroupPostRow[]>([]);
@@ -90,7 +93,7 @@ function GroupSpace({ id, initialTab }: { id: string; initialTab: Tab }) {
         }
       }));
       if (generation.current !== turn) return;
-      setName(group.name); setMembers(authors.filter((author): author is Author => !!author));
+      setName(group.name); setCoverKey(group.cover_key || null); setMembers(authors.filter((author): author is Author => !!author));
       if (tab === 'availability') setAvailability(rows as AvailabilityRow[]);
       else {
         setPosts(previous => offset ? [...new Map([...previous, ...rows as GroupPostRow[]].map(row => [row.id, row])).values()] : rows as GroupPostRow[]);
@@ -122,29 +125,27 @@ function GroupSpace({ id, initialTab }: { id: string; initialTab: Tab }) {
     else Alert.alert('¿Retirar esta publicación?', 'También se retirarán sus respuestas.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Retirar', style: 'destructive', onPress: perform }]);
   };
   const author = (owner: string) => members.find(member => member.id === owner)?.name || 'Miembro del grupo';
-  return <Screen wide back title="Grupo" refreshing={loading} onRefresh={busy || loading ? undefined : () => { void load(); }} action={<ItemActions label="Opciones del grupo" actions={[
+  return <Screen wide back backTo="/friends" title="Amigas" contentStyle={{ paddingTop: 24, gap: 24 }} refreshing={loading} onRefresh={busy || loading ? undefined : () => { void load(); }} action={<ItemActions label="Opciones del grupo" actions={[
     { label: 'Miembros e invitaciones', disabled: busy, onPress: () => router.push({ pathname: '/group/[id]', params: { id } }) },
     { label: 'Actualizar contenido', disabled: busy || loading, onPress: () => { void load(); } },
   ]} />}>
-    <View style={{ width: '100%', maxWidth: 1280, alignSelf: 'center', gap: 24 }}>
-    {!!name && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-      <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: p.soft, alignItems: 'center', justifyContent: 'center' }}><Copy style={{ fontSize: 24, fontWeight: '700', color: p.accent }}>{name.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toLocaleUpperCase('es-ES')}</Copy></View>
-      <View style={{ flex: 1, gap: 6 }}><Copy accessibilityRole="header" style={{ fontSize: 28, lineHeight: 36, fontWeight: '700' }}>{name}</Copy><View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}><Copy muted style={{ fontSize: 14 }}>{members.length} {members.length === 1 ? 'persona' : 'personas'}</Copy><Privacy>Grupo privado</Privacy></View></View>
-    </View>}
+    <View style={{ width: '100%', alignSelf: 'center', gap: 24 }}>
+    {!!name && <GroupHeader id={id} name={name} coverKey={coverKey} count={members.length} members={members} tab={tab} busy={busy} onTabChange={value => {
+      if (value === 'people') router.navigate({ pathname: '/group/[id]', params: { id } });
+      else setTab(value);
+    }} />}
     {!!notice && <ActionNotice key={notice} message={notice} />}
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-      <ChoiceTabs variant="segmented" value={tab} onChange={value => { if (!busy) setTab(value); }} options={[{ value: 'availability', label: 'Disponibilidad' }, { value: 'plan', label: 'Planes' }, { value: 'gift', label: 'Regalos' }]} />
-      {!!name && tab !== 'availability' && <Action icon={<PlusIcon size={18} color={p.onAccent} />} disabled={busy} onPress={() => router.push({ pathname: '/group-post', params: { groupId: id, kind: tab } })}>{tab === 'plan' ? 'Proponer un plan' : 'Compartir algo'}</Action>}
-    </View>
+
     {loading && <ActivityIndicator color={p.accent} accessibilityLabel="Cargando el grupo" />}
     {!!error && <View style={{ gap: 8 }}><Copy accessibilityRole="alert" style={{ color: p.danger }}>{error}</Copy><TextAction disabled={busy || loading} onPress={() => { void load(); }}>Volver a intentar</TextAction></View>}
     <MotionContent changeKey={tab} style={{ gap: 24 }}>
     {!!name && tab === 'availability' && <GroupAvailability rows={availability} members={members} accountId={repository!.accountId} month={month} onMonth={value => { if (!busy) { setMonth(value); setSelected(localDate(value)); } }} selected={selected} onSelect={setSelected} busy={busy} onDay={value => { void run(() => repository!.setAvailabilityDay(id, selected, value), value === null ? 'Respuestas retiradas.' : 'Agenda al d\u00eda. \u00a1Que empiecen los planes!'); }} onToggle={(period, value) => { void run(() => repository!.setAvailability(id, selected, period, value), value === null ? 'Respuesta retirada.' : 'Disponibilidad guardada. \u00a1Un paso m\u00e1s cerca del plan!'); }} onPlan={date => router.push({ pathname: '/group-post', params: { groupId: id, kind: 'plan', date } })} />}
     {!!name && tab !== 'availability' && <>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-        <View style={{ flex: 1, minWidth: 220, gap: 6 }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><Copy accessibilityRole="header" style={{ fontSize: 24, lineHeight: 32, fontWeight: '700' }}>{tab === 'plan' ? 'Planes del grupo' : 'Una segunda vida'}</Copy><View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: p.soft }}><Copy muted style={{ fontSize: 13 }}>{posts.length}{more ? '+' : ''}</Copy></View></View><Copy muted style={{ fontSize: 15, lineHeight: 22 }}>{tab === 'plan' ? 'Compartid una idea, elegid una fecha y apuntaos.' : 'Regalos, ventas y subastas entre personas de tu grupo.'}</Copy></View>
+        <View style={{ flex: 1, minWidth: 220, gap: 6 }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><Copy accessibilityRole="header" style={{ fontSize: 24, lineHeight: 32, fontWeight: '700' }}>{tab === 'plan' ? 'Planes del grupo' : 'Una segunda vida'}</Copy><View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: p.soft }}><Copy muted style={{ fontSize: 13 }}>{posts.length}{more ? '+' : ''}</Copy></View></View><Copy muted style={{ fontSize: 15, lineHeight: 22 }}>{tab === 'plan' ? 'Compartid una idea y ponedle fecha al famoso «a ver si nos vemos».' : 'Regalos, ventas y subastas entre personas de tu grupo.'}</Copy></View>
+      <Action icon={<PlusIcon size={18} color={p.onAccent} />} disabled={busy} onPress={() => router.push({ pathname: '/group-post', params: { groupId: id, kind: tab } })}>{tab === 'plan' ? 'Proponer un plan' : 'Compartir algo'}</Action>
       </View>
-      {!posts.length && <View style={{ padding: 32, borderRadius: 16, backgroundColor: p.surface, alignItems: 'center', gap: 12 }}><View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: tab === 'gift' ? p.peach : p.soft, alignItems: 'center', justifyContent: 'center' }}>{tab === 'gift' ? <GiftIcon size={32} color={p.peachText} /> : <CalendarBlankIcon size={32} color={p.accent} />}</View><Copy style={{ fontSize: 22, fontWeight: '600', textAlign: 'center' }}>{tab === 'plan' ? '¿Cuándo nos vemos?' : 'Dale una segunda vida'}</Copy><Copy muted style={{ maxWidth: 400, textAlign: 'center' }}>{tab === 'plan' ? 'Propón el primer plan. Las demás podrán apuntarse.' : 'Comparte algo que ya no uses y encuentra a quien lo disfrute.'}</Copy></View>}
+      {!posts.length && <View style={{ padding: 32, borderRadius: 16, backgroundColor: p.surface, alignItems: 'center', gap: 12 }}><View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: tab === 'gift' ? p.peach : p.soft, alignItems: 'center', justifyContent: 'center' }}>{tab === 'gift' ? <GiftIcon size={32} color={p.peachText} /> : <CalendarBlankIcon size={32} color={p.accent} />}</View><Copy style={{ fontSize: 22, fontWeight: '600', textAlign: 'center' }}>{tab === 'plan' ? '¿Cuándo nos vemos?' : 'Dale una segunda vida'}</Copy><Copy muted style={{ maxWidth: 400, textAlign: 'center' }}>{tab === 'plan' ? 'Propón el primer plan. El «hay que quedar» ya tiene dónde aterrizar. Las demás podrán apuntarse.' : 'Comparte algo que ya no uses y encuentra a quien lo disfrute.'}</Copy></View>}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20, alignItems: 'stretch' }}>
       {posts.map(post => {
         const own = post.owner_id === repository!.accountId;

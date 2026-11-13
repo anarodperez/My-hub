@@ -55,6 +55,37 @@ test('retirar la coleccion editada no retira otra seleccionada despues', async (
   assert.deepEqual(collections.wishlistOrganization(view.state).collections.map(c => c.id), ['gifts']);
 });
 
+test('collections use one assigned cover and can fall back to a completed wish', () => {
+  const view = harness('src/components/wishlist-collections.tsx', 'WishlistCollections');
+  view.state = { ...emptyState, wishlistOrganization: { collections: [{ id: 'books', name: 'Lecturas' }], assignments: { 'wish:a': 'books', 'wish:b': 'books' } }, wishes: [
+    { id: 'a', title: 'Pending', category: 'book', completed: false, coverUrl: 'pending.jpg' },
+    { id: 'b', title: 'Finished', category: 'book', completed: true, coverUrl: 'finished.jpg' },
+    { id: 'c', title: 'Other', category: 'book', completed: false, coverUrl: 'other.jpg' },
+  ] };
+  const nodes = view.render({ value: 'books', vertical: false, onChange() {} });
+  const collection = nodes.find(n => n.type === 'Pressable' && n.props.accessibilityLabel === 'Lecturas, 2 deseos');
+  assert.ok(collection);
+  const sources = [];
+  const collect = node => {
+    if (!node || typeof node !== 'object') return;
+    if (node.props?.source) sources.push(node.props.source);
+    [node.props?.children].flat(Infinity).forEach(collect);
+  };
+  collect(collection);
+  assert.deepEqual(sources, ['pending.jpg']);
+  const image = nodes.find(n => n.props?.source === 'pending.jpg');
+  assert.equal(image.props.contentFit, 'contain');
+  image.props.onError();
+  sources.length = 0;
+  collect(view.render({ value: 'books', vertical: true, onChange() {} }).find(n => n.type === 'Pressable' && n.props.accessibilityLabel === 'Lecturas, 2 deseos'));
+  assert.deepEqual(sources, ['finished.jpg']);
+  const refreshed = view.render({ value: 'books', vertical: true, onChange() {} });
+  refreshed.find(n => n.props?.source === 'finished.jpg').props.onError();
+  sources.length = 0;
+  collect(view.render({ value: 'books', vertical: true, onChange() {} }).find(n => n.type === 'Pressable' && n.props.accessibilityLabel === 'Lecturas, 2 deseos'));
+  assert.deepEqual(sources, []);
+});
+
 test('reintentar tras fallo parcial reutiliza el deseo y no crea duplicados', async () => {
   const view = harness('src/app/wish.tsx', 'WishEditor');
   let failed = false;

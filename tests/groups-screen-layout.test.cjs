@@ -1,0 +1,45 @@
+﻿const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const ts=require('typescript');
+const compile=path=>ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
+for(const [width,fontScale] of [[390,1],[900,1],[1440,1],[1920,1],[390,1.6],[1440,1.6]])test(`groups: ${width}px, font ${fontScale}`,async()=>{
+ let index=0;const slots=[],focus=[],routes=[];
+ const repository={accountId:'ana',listGroups:async()=>[{id:'g',name:'Club de lecturas',owner_id:'ana',group_members:[{count:5}]}]};
+ const components=new Proxy({},{get:(_,key)=>key});
+ const react={useState(initial){const i=index++;if(!(i in slots))slots[i]=initial;return[slots[i],v=>slots[i]=typeof v==='function'?v(slots[i]):v];},useRef(initial){const i=index++;return slots[i]||={current:initial};},useCallback:fn=>fn};
+ const layout={};vm.runInNewContext(compile('src/features/hub/layout.ts'),{exports:layout});
+ const covers={};vm.runInNewContext(compile('src/features/hub/group-covers.ts'),{exports:covers,require:name=>name});
+ const mocks={react,'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})},'react-native':{Pressable:'Pressable',View:'View',useWindowDimensions:()=>({width,fontScale})},'expo-router':{useFocusEffect:fn=>focus.push(fn),router:{push:v=>routes.push(v)}},'@/features/hub/provider':{useHub:()=>({repository}),usePalette:()=>({})},'./layout':layout};
+ mocks['./group-covers']=covers;
+ mocks['@/components/web-motion']={webMotion:()=>({})};
+ const exports={};vm.runInNewContext(compile('src/features/hub/groups-screen.tsx'),{exports,require:name=>mocks[name]||components});
+ const all=n=>!n||typeof n!=='object'?[]:[n,...[n.props?.children,n.props?.action].flat(Infinity).flatMap(all)];
+ const render=(props={})=>{index=0;return all(exports.GroupsScreen({back:false,...props}));};
+ render();focus.shift()();await new Promise(setImmediate);
+ let nodes=render();assert.equal(Boolean(nodes.find(n=>n.type==='Screen').props.action),width>=1100&&fontScale<=1.3);
+ const card=nodes.find(n=>n.type==='Pressable'&&n.props.accessibilityLabel==='Abrir Club de lecturas');
+ const cover=nodes.find(n=>n.type==='LoadingImage');
+ assert.match(cover.props.source,/assets\/group-covers\/(coffee|reading|flowers)\.jpg$/);
+ assert.ok(fs.statSync(cover.props.source.replace('../../../','')).size>1000);
+ assert.equal(cover.props.accessible,false);
+ assert.equal(render().find(n=>n.type==='LoadingImage').props.source,cover.props.source);
+ const cardWidth=card.props.style({pressed:false}).width;
+ if(layout.getHubLayout(width,fontScale,true).feedColumns===1)assert.equal(cardWidth,'100%');else assert.ok(cardWidth>=300&&cardWidth<=1152);
+ if(typeof cardWidth==='number'){
+  const available=layout.getHubLayout(width,fontScale,true);
+  const columns=Math.min(available.feedColumns,3);
+  assert.ok(Math.abs(cardWidth*columns+(columns-1)*16-available.contentWidth)<0.01,'group cards fill the available width');
+ }
+ card.props.onPress();assert.equal(routes[0].params.id,'g');
+ assert.equal(routes[0].params.tab,'plan');
+ render({calendarHeader:'calendar scope'}).find(n=>n.type==='Pressable'&&n.props.accessibilityLabel==='Abrir Club de lecturas').props.onPress();
+ assert.equal(routes.at(-1).params.tab,'availability');
+ nodes.find(n=>n.type==='Action'&&n.props.children==='Crear grupo').props.onPress();
+ nodes=render();assert.ok(nodes.some(n=>n.type==='Field'&&n.props.label==='Nombre del grupo'));
+ assert.equal(nodes.find(n=>n.type==='Action'&&n.props.children==='Crear grupo').props.expanded,true);
+ nodes.find(n=>n.type==='Action'&&n.props.children==='Unirme').props.onPress();
+ nodes=render();assert.ok(nodes.some(n=>n.type==='Field'&&n.props.label==='C\u00f3digo de invitaci\u00f3n'));
+ assert.equal(nodes.find(n=>n.type==='Action'&&n.props.children==='Unirme').props.expanded,true);
+});

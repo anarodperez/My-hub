@@ -40,6 +40,19 @@ test('elegir un dia mantiene el detalle y la fecha de crear un plan', () => {
   assert.equal(screen.calls[0].params.kind, 'event');
 });
 
+test('phone month grid recovers room for day controls while desktop retains its gutters', () => {
+  for (const width of [360, 390, 1440]) {
+    const nodes = calendar(width).render();
+    const screen = nodes.find(node => node.type === 'Screen');
+    const outerPadding = screen.props.contentStyle?.paddingHorizontal ?? 24;
+    const month = nodes.find(node => node.type === 'View' && node.props.style?.gap === 16 && node.props.style?.padding !== undefined);
+    const cell = nodes.find(node => node.type === 'View' && node.props.style?.width === '14.2857%' && node.props.style?.padding !== undefined);
+    const dayWidth = (width - 2 * outerPadding - 2 * month.props.style.padding) / 7 - 2 * cell.props.style.padding;
+    if (width < 700) assert.ok(dayWidth >= 44, `day controls at ${width}px are ${dayWidth}px wide`);
+    else assert.equal(outerPadding, 24);
+  }
+});
+
 test('navegacion de mes y filtros siguen funcionando en movil y escritorio', () => {
   for (const width of [390, 1100, 1440]) {
     const screen = calendar(width); let nodes = screen.render();

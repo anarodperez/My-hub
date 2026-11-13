@@ -8,7 +8,7 @@ import { useHub, usePalette } from '@/features/hub/provider';
 import type { GroupRow } from '@/features/hub/backend-types';
 
 /** Opens a draft only; publishing still requires the plan form's explicit action. */
-export function RecommendationPlanAction({ title, description = '' }: { title: string; description?: string }) {
+export function RecommendationPlanAction({ title, description = '', showLabel = false }: { title: string; description?: string; showLabel?: boolean }) {
   const { repository } = useHub();
   const p = usePalette();
   const [open, setOpen] = useState(false);
@@ -35,7 +35,7 @@ export function RecommendationPlanAction({ title, description = '' }: { title: s
     return () => { active = false; };
   }, [open, repository, retry]);
   return <>
-    <IconAction label={`Proponer un plan: ${title}`} onPress={() => setOpen(true)}><CalendarBlankIcon size={22} color={p.accent} /></IconAction>
+    {showLabel ? <Action secondary icon={<CalendarBlankIcon size={20} color={p.accent} />} onPress={() => setOpen(true)}>Proponer un plan</Action> : <IconAction label={`Proponer un plan: ${title}`} onPress={() => setOpen(true)}><CalendarBlankIcon size={22} color={p.accent} /></IconAction>}
     {open && <FormDialog busy={false} onClose={() => setOpen(false)}><View style={{ padding: 24, gap: 20 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Copy accessibilityRole="header" style={{ flex: 1, fontSize: 24, fontWeight: '700' }}>De idea a plan</Copy><IconAction label="Cerrar selección de grupo" onPress={() => setOpen(false)}><XIcon size={24} color={p.muted} /></IconAction></View>
       <Copy muted>Elige con quién compartir «{title}». Podrás revisar los detalles antes de publicar.</Copy>

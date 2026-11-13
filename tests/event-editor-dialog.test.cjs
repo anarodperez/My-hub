@@ -12,7 +12,7 @@ test('el evento se edita en modal y guarda la fecha elegida antes de volver al c
   const mocks = {
     react: { useEffect() {}, useRef: initial => ({ current: initial }), useState: initial => { const slot = index++; if (!(slot in states)) states[slot] = typeof initial === 'function' ? initial() : initial; return [states[slot], value => { states[slot] = typeof value === 'function' ? value(states[slot]) : value; }]; } },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
-    'react-native': { View: 'View', Platform: { OS: 'web' } },
+    'react-native': { View: 'View', Platform: { OS: 'web' }, useWindowDimensions: () => ({ width: 390, fontScale: 1 }) },
     'expo-crypto': { randomUUID: () => 'new-event' },
     '@/features/hub/provider': { useHub: () => ({ state: emptyState, update: async change => { saved = change(emptyState); } }), usePalette: () => ({}) },
     '@/features/hub/model': require('../src/features/hub/model.ts'),
