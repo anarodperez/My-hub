@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isLocalDate, isRating, isWebLink, recommendationCategories } from './model.ts';
 import { validOrganization } from './wishlist-collections.ts';
+import { validMoments } from './moments.ts';
+import { reactionOptions, type ReactionKind, type ReactionSummary } from './reactions.ts';
 import type { AvailabilityPeriod, AvailabilityRow, GroupPostInput, GroupPostKind, GroupPostRow, Author, CommentRow, Edit, EventInput, EventRow, GroupRow, PreferencesInput, PreferencesRow, RecommendationInput, RecommendationRow, SongInput, SongRow, WishInput, WishlistRow } from './backend-types.ts';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -110,6 +112,10 @@ export function createHubRepository(client: SupabaseClient, accountId: string) {
       const payload: Record<string, unknown> = {};
       if (input.theme !== undefined) payload.theme = input.theme;
       if (input.wishlist_visibility !== undefined) payload.wishlist_visibility = input.wishlist_visibility;
+      if (input.current_media !== undefined) {
+        if (!validMoments(input.current_media) || input.current_media.some(item => item.coverUrl.length > 4000 || item.coverUrl.startsWith('data:'))) throw new Error('Contenido de Mi momento no válido.');
+        payload.current_media = input.current_media;
+      }
       if (input.wishlist_organization !== undefined) {
         if (!validOrganization(input.wishlist_organization)) throw new Error('Colecciones no válidas.');
         payload.wishlist_organization = input.wishlist_organization;
@@ -131,6 +137,22 @@ export function createHubRepository(client: SupabaseClient, accountId: string) {
       if (!removed.length) throw new Error('El elemento cambió o ya no está disponible. Recarga los datos.');
     },
     listGroups: () => checked<GroupRow[]>(client.from('groups').select('*,group_members(count)').order('created_at')),
+    setGroupCover(id: string, choice: NonNullable<GroupRow['cover_key']>) {
+      if (!['coffee','reading','flowers'].includes(choice)) throw new Error('Portada no válida.');
+      return rpc<GroupRow>('set_group_cover', { target: uuid(id), choice });
+    },
+    async listReactionSummaries(ids: string[]) {
+      const unique = [...new Set(ids)]; unique.forEach(uuid);
+      const rows: ReactionSummary[] = [];
+      for (let offset = 0; offset < unique.length; offset += 100) rows.push(...await rpc<ReactionSummary[]>('recommendation_reaction_summary', { targets: unique.slice(offset, offset + 100) }));
+      return rows;
+    },
+    async setReaction(id: string, kind: ReactionKind | null) {
+      if (kind !== null && !reactionOptions.some(option => option.value === kind)) throw new Error('Reacción no válida.');
+      const rows = await rpc<ReactionSummary[]>('set_recommendation_reaction', { target: uuid(id), next_kind: kind });
+      if (!rows[0]) throw new Error('Esta recomendación ya no está disponible.');
+      return rows[0];
+    },
     async listAvailability(groupId: string, from: string, through: string) {
       uuid(groupId); date(from); date(through);
       const rows: AvailabilityRow[] = [];

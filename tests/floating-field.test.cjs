@@ -12,7 +12,7 @@ function field(props = {}, fontScale = 1) {
   vm.runInNewContext(ts.transpileModule(component, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
     exports, require: () => ({ jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }),
     useState: initial => { const i = index++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = value; }]; },
-    usePalette: () => palette, useWindowDimensions: () => ({ fontScale }),
+    Platform: { OS: 'ios' }, usePalette: () => palette, useWindowDimensions: () => ({ fontScale }),
     View: 'View', MotionReveal: 'MotionReveal', TextInput: 'Input', Copy: 'Copy', isLoaded: () => false, s: { input: {} },
   });
   const render = () => { index = 0; return exports.Field({ label: 'Correo', placeholder: 'tu@correo.com', variant: 'floating', ...props }); };

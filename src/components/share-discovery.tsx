@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { Copy, IconAction, SaveAction, TextAction } from './hub-ui';
+import { Action, Copy, IconAction, SaveAction, TextAction } from './hub-ui';
 import { ShareNetworkIcon, XIcon } from './hub-icons';
 import { useHub, usePalette } from '@/features/hub/provider';
 import type { Recommendation } from '@/features/hub/model';
 import type { GroupRow } from '@/features/hub/backend-types';
 
-export function ShareDiscovery({ post, onShared }: { post: Recommendation; onShared: () => Promise<void> }) {
+export function ShareDiscovery({ post, onShared, showLabel = false }: { post: Recommendation; onShared: () => Promise<void>; showLabel?: boolean }) {
   const { repository, refresh } = useHub();
   const p = usePalette();
   const current = useRef(repository);
@@ -38,8 +38,8 @@ export function ShareDiscovery({ post, onShared }: { post: Recommendation; onSha
     finally { if (current.current === repository) setBusy(false); }
   };
   if (post.ownerId !== repository?.accountId) return null;
-  return <View style={{ gap: 8 }}>
-    <View style={{ alignSelf: 'flex-start' }}><IconAction label={open ? 'Cancelar compartir' : 'Compartir con un grupo'} expanded={open} disabled={busy} onPress={() => setOpen(value => !value)}>{open ? <XIcon size={23} color={p.muted} /> : <ShareNetworkIcon size={23} color={p.accent} />}</IconAction></View>
+  return <View style={{ gap: 12, flexBasis: open ? '100%' : undefined }}>
+    {showLabel ? <Action secondary expanded={open} disabled={busy} icon={open ? <XIcon size={20} color={p.accent} /> : <ShareNetworkIcon size={20} color={p.accent} />} onPress={() => setOpen(value => !value)}>{open ? 'Cancelar compartir' : 'Compartir con un grupo'}</Action> : <View style={{ alignSelf: 'flex-start' }}><IconAction label={open ? 'Cancelar compartir' : 'Compartir con un grupo'} expanded={open} disabled={busy} onPress={() => setOpen(value => !value)}>{open ? <XIcon size={23} color={p.muted} /> : <ShareNetworkIcon size={23} color={p.accent} />}</IconAction></View>}
     {open && <>
       <Copy muted>La publicación y sus comentarios se mostrarán solo al grupo que elijas.</Copy>
       {groups.map(group => <TextAction disabled={busy} key={group.id} onPress={() => setTarget(group.id)}>{target === group.id ? '✓ ' : ''}{group.name}</TextAction>)}

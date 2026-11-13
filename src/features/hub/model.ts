@@ -1,8 +1,10 @@
 import { validOrganization, type WishlistOrganization } from './wishlist-collections.ts';
+import { validMoments, type Moment } from './moments.ts';
+import type { ReactionSummary } from './reactions.ts';
 export type Category = 'book' | 'movie' | 'series' | 'product' | 'place';
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type CloudMeta = { revision?: number; coverPath?: string; ownerId?: string; visibility?: 'private' | 'public' | 'group'; groupId?: string; commentCount?: number; authorName?: string };
-export type Recommendation = CloudMeta & { id: string; title: string; category: Category; opinion: string; rating: number; coverUrl: string; createdAt: string; priceCents?: number; location?: string; link?: string; sample?: boolean; commentPreview?: { id: string; body: string; authorName: string }[] };
+export type Recommendation = CloudMeta & { id: string; title: string; category: Category; opinion: string; rating: number; coverUrl: string; createdAt: string; priceCents?: number; location?: string; link?: string; sample?: boolean; fromMoment?: Moment['category']; reactions?: ReactionSummary; commentPreview?: { id: string; body: string; authorName: string }[] };
 export type CalendarEvent = CloudMeta & { id: string; title: string; category: Category; date: string };
 export type Wish = CloudMeta & { id: string; title: string; category: Category; coverUrl: string; link?: string; completed: boolean };
 export type HubState = {
@@ -15,12 +17,13 @@ export type HubState = {
   previewExamplesAdded?: boolean;
   previewPhotosAdded?: boolean;
   wishes?: Wish[];
+  moments?: Moment[];
   wishlistVisibility?: 'private' | 'public';
   wishlistOrganization?: WishlistOrganization;
   recommendations: Recommendation[];
   saved: { recommendationId: string; status: 'pending' | 'finished' }[];
   events: CalendarEvent[];
-  preferences: { name: string; theme: ThemePreference; avatarUri?: string };
+  preferences: { name: string; theme: ThemePreference; avatarUri?: string; avatarPath?: string };
 };
 export const emptyState: HubState = { version: 1, recommendations: [], saved: [], events: [], preferences: { name: '', theme: 'system' } };
 export function toggleSaved(state: HubState, recommendationId: string): HubState {
@@ -89,6 +92,7 @@ const record = (value: unknown): value is Record<string, unknown> => !!value && 
 export function decodeState(raw: string | null): HubState {
   if (raw === null) return emptyState;
   const value: unknown = JSON.parse(raw);
+  if (value && typeof value === 'object' && 'moments' in value && value.moments !== undefined && !validMoments(value.moments)) throw new Error('No hemos podido leer tu momento. No se ha borrado nada.');
   if (!record(value) || value.version !== 1 || (value.examplesAdded !== undefined && typeof value.examplesAdded !== 'boolean') || !record(value.preferences) || typeof value.preferences.name !== 'string' || !['system', 'light', 'dark'].includes(String(value.preferences.theme)) ||
     (value.songExampleAdded !== undefined && typeof value.songExampleAdded !== 'boolean') ||
     (value.starsideCoverUpdated !== undefined && typeof value.starsideCoverUpdated !== 'boolean') ||

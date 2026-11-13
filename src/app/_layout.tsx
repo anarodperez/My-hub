@@ -7,6 +7,9 @@ import { HubProvider, usePalette } from '@/features/hub/provider';
 import { AccountProvider, useAccount } from '@/features/account/provider';
 import { useFonts } from 'expo-font';
 import { hubFonts } from '@/constants/hub-design';
+import { AppShell } from '@/components/app-shell';
+import { WebUIProvider } from '@/components/web-ui-provider';
+import '@/global.css';
 
 function Navigation() {
   const p = usePalette();
@@ -16,6 +19,7 @@ function Navigation() {
   if (loading || (!fontsLoaded && !fontError)) return <View style={{ flex: 1, backgroundColor: p.background, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator color={p.accent} accessibilityLabel="Preparando My Hub" /></View>;
   return <ThemeProvider value={p.dark ? DarkTheme : DefaultTheme}>
     <StatusBar style={p.dark ? 'light' : 'dark'} />
+    <AppShell authenticated={!!session}>
     <Stack screenOptions={{ animation: reducedMotion ? 'none' : 'default', headerShown: false, contentStyle: { backgroundColor: p.background } }}>
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="(tabs)" />
@@ -27,6 +31,7 @@ function Navigation() {
         <Stack.Screen name="wish" />
         <Stack.Screen name="review" />
         <Stack.Screen name="song" />
+        <Stack.Screen name="moment" />
         <Stack.Screen name="discovery/[id]" />
         <Stack.Screen name="groups" />
         <Stack.Screen name="group/[id]" />
@@ -38,6 +43,7 @@ function Navigation() {
       </Stack.Protected>
       <Stack.Screen name="account" />
     </Stack>
+    </AppShell>
   </ThemeProvider>;
 }
-export default function RootLayout() { return <AccountProvider><HubProvider><Navigation /></HubProvider></AccountProvider>; }
+export default function RootLayout() { return <AccountProvider><HubProvider><WebUIProvider><Navigation /></WebUIProvider></HubProvider></AccountProvider>; }

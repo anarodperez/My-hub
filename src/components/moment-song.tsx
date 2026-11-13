@@ -9,11 +9,18 @@ import { Copy } from './hub-ui';
 import { ExternalLink } from './external-link';
 import { useHub, usePalette } from '@/features/hub/provider';
 
-export function MomentSong() {
+export function MomentSong({ compact = false }: { compact?: boolean }) {
   const { state } = useHub();
   const p = usePalette();
   const song = state.song;
   const [failedUri, setFailedUri] = useState('');
+  if (compact) return song ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`Cambiar canción: ${song.title}, ${song.artist}`} onPress={() => router.push('/song')} style={({ pressed }) => ({ flex: 1, minWidth: 0, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, opacity: pressed ? 0.6 : 1 })}>
+      <MusicNotesIcon size={18} color={p.muted} />
+      <Copy muted numberOfLines={1} style={{ flex: 1, fontSize: 13 }}>{song.title} · {song.artist}</Copy>
+    </Pressable>
+    {song.link && <ExternalLink href={song.link as `https://${string}` | `http://${string}`} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Escuchar ${song.title}`} style={({ pressed }) => ({ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}><PlayIcon size={18} color={p.accent} weight="fill" /></Pressable></ExternalLink>}
+  </View> : null;
   return <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 12, backgroundColor: p.surface, paddingHorizontal: 10, paddingVertical: 6, gap: 6 }}>
     <Pressable accessibilityRole="button" accessibilityLabel={song ? `Cambiar canción: ${song.title}, ${song.artist}` : 'Elegir mi canción del momento'} onPress={() => router.push('/song')} style={({ pressed }) => ({ flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, opacity: pressed ? 0.6 : 1 })}>
       {song ? <SongDisc uri={song.coverUrl !== failedUri ? song.coverUrl : ''} onError={() => setFailedUri(song.coverUrl)} /> : <View style={{ width: 38, height: 38, borderRadius: 8, backgroundColor: p.soft, alignItems: 'center', justifyContent: 'center' }}><MusicNotesIcon size={20} color={p.accent} weight="duotone" /></View>}

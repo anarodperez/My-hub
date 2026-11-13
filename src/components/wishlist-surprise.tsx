@@ -37,6 +37,7 @@ export function WishlistSurprise({ wishes, recommendations }: { wishes: Wish[]; 
       <Copy style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: p.accent }}>{result && options.length > 1 ? 'Otra sorpresa' : 'Sorpréndeme'}</Copy>
     </Pressable>
     {result && <Animated.View style={{ gap: 8, backgroundColor: p.soft, borderRadius: 16, padding: 16, opacity: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }), transform: [{ translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }] }}>
+      <Copy muted style={{ fontSize: 13, lineHeight: 20 }}>El dado ha hablado. Tú tienes la última palabra.</Copy>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ width: 56, height: 72, borderRadius: 8, overflow: 'hidden', backgroundColor: p.surface, alignItems: 'center', justifyContent: 'center' }}>{result.item.coverUrl && result.item.coverUrl !== failedCover ? <Image source={result.item.coverUrl} contentFit="cover" style={{ width: 56, height: 72 }} onError={() => setFailedCover(result.item.coverUrl)} /> : <CategoryIcon category={result.item.category} size={24} />}</View><Copy accessibilityLiveRegion="polite" style={{ flex: 1, fontSize: 18, lineHeight: 25, fontWeight: '600' }}>{result.item.title}</Copy></View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <TextAction onPress={open}>Ver deseo</TextAction>

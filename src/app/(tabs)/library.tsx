@@ -1,10 +1,10 @@
 import { MotionContent, MotionReveal } from '@/components/hub-motion';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View, useWindowDimensions, type TextInputInstance } from 'react-native';
 import { MagnifyingGlassIcon } from 'phosphor-react-native/src/icons/MagnifyingGlass';
 import { BookmarkSimpleIcon, CheckIcon, SlidersHorizontalIcon, FunnelXIcon, XIcon } from '@/components/hub-icons';
-import { AddAction, Chips, ChoiceTabs, Copy, Empty, IconAction, Screen, TextAction, showError } from '@/components/hub-ui';
+import { AddAction, Chips, ChoiceTabs, Copy, Empty, IconAction, Screen, TextAction } from '@/components/hub-ui';
 import { RecommendationCard } from '@/components/recommendation-card';
 import { WishlistSurprise } from '@/components/wishlist-surprise';
 import { WishlistTile } from '@/components/wishlist-tile';
@@ -19,7 +19,8 @@ import { getHubLayout } from '@/features/hub/layout';
 import { useViewState } from '@/hooks/use-view-state';
 
 export default function LibraryScreen() {
-  const { state, update, repository } = useHub();
+  const { state, repository } = useHub();
+  const { view } = useLocalSearchParams<{ view?: string }>();
   const p = usePalette();
   const { width, fontScale } = useWindowDimensions();
   const { wishColumns, contentWidth, feedColumns } = getHubLayout(width, fontScale);
@@ -27,6 +28,13 @@ export default function LibraryScreen() {
   const [filter, setFilter] = useViewState<'pending' | 'finished'>('wishlist.status', 'pending');
   const [category, setCategory] = useViewState<Category | 'all'>('wishlist.category', 'all');
   const [collection, setCollection] = useViewState<'wishlist' | 'mine'>('wishlist.view', 'wishlist');
+  useEffect(() => {
+    if (view === 'mine' || view === 'wishlist') setCollection(view);
+  }, [view, setCollection]);
+  const changeCollection = (value: 'wishlist' | 'mine') => {
+    setCollection(value);
+    router.setParams({ view: value });
+  };
   const [query, setQuery] = useViewState('wishlist.search', '');
   const [searchFocused, setSearchFocused] = useState(false);
   const searchInput = useRef<TextInputInstance>(null);
@@ -40,14 +48,14 @@ export default function LibraryScreen() {
   const collectionName = activeCollection === 'all' ? 'Todos tus deseos' : activeCollection === 'unassigned' ? 'Sin colección' : organization.collections.find(c => c.id === activeCollection)!.name;
   const vertical = width >= 1200 && fontScale <= 1.3;
   const availableWidth = contentWidth - (vertical && collection === 'wishlist' ? 248 : 0);
-  const columns = fontScale > 1.3 ? 1 : width >= 900 ? Math.max(1, Math.floor((availableWidth + 16) / 256)) : wishColumns;
-  const tileWidth = columns === 1 ? '100%' as const : (availableWidth - (columns - 1) * 16) / columns;
+  const tileGap = width >= 900 ? 24 : 16;
+  const columns = fontScale > 1.3 ? 1 : width >= 900 ? Math.max(1, Math.min(4, Math.floor((availableWidth + tileGap) / (280 + tileGap)))) : wishColumns;
+  const tileWidth = columns === 1 ? '100%' as const : (availableWidth - (columns - 1) * tileGap) / columns;
   const addWish = () => router.push({ pathname: '/wish', params: { collection: activeCollection } });
   const activeFilters = Number(category !== 'all') + Number(minimumRating !== '0');
   const [notice, setNotice] = useState({ message: '', sequence: 0 });
   const showNotice = (message: string) => setNotice((previous) => ({ message, sequence: previous.sequence + 1 }));
   useEffect(() => { if (!notice.message) return; const timeout = setTimeout(() => setNotice((previous) => ({ ...previous, message: '' })), 2500); return () => clearTimeout(timeout); }, [notice]);
-  const visibility = state.wishlistVisibility || 'private';
   const selected = selectWishlist(state, filter, category, activeCollection);
   const { counts, totalForStatus } = selected;
   const items = filterCollection(selected.recommendations, query, category, Number(minimumRating));
@@ -57,10 +65,10 @@ export default function LibraryScreen() {
   if (order === 'title') entries.sort((a, b) => a.item.title.localeCompare(b.item.title, 'es', { sensitivity: 'base', numeric: true }));
   const noMatches = totalForStatus > 0 && !items.length && !wishes.length;
   return <Screen wide title={collection === 'mine' ? 'Mis descubrimientos' : 'Tu wishlist'} subtitle={collection === 'wishlist' ? 'Lo que te ilusiona, organizado a tu manera.' : undefined} action={<AddAction label={collection === 'mine' ? 'Crear descubrimiento' : 'Añadir deseo'} onPress={collection === 'mine' ? () => router.push('/compose') : addWish} />}>
-    <ChoiceTabs variant="segmented" value={collection} onChange={setCollection} options={[{ value: 'wishlist', label: 'Wishlist' }, { value: 'mine', label: 'Mis descubrimientos' }]} />
+    <ChoiceTabs variant="segmented" value={collection} onChange={changeCollection} options={[{ value: 'wishlist', label: 'Wishlist' }, { value: 'mine', label: 'Mis descubrimientos' }]} />
     <View style={{ flexDirection: vertical ? 'row' : 'column', gap: 28, alignItems: 'stretch' }}>
     {collection === 'wishlist' && <WishlistCollections value={activeCollection} onChange={setSelectedCollection} vertical={vertical} />}
-    <View style={{ flex: vertical ? 1 : undefined, minWidth: 0, gap: 20 }}>
+    <View style={{ flex: vertical ? 1 : undefined, minWidth: 0, gap: 24 }}>
     <View style={{ gap: 16 }}>
     {collection === 'wishlist' && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Copy accessibilityRole="header" style={{ flex: 1, fontSize: 22, lineHeight: 28, fontWeight: '600' }}>{collectionName}</Copy><Copy muted style={{ fontSize: 13 }}>{counts.pending + counts.finished} deseos</Copy></View>}
     <View style={{ flexDirection: availableWidth >= 880 ? 'row' : 'column', justifyContent: 'space-between', gap: 16, alignItems: availableWidth >= 880 ? 'center' : 'stretch' }}>
@@ -96,20 +104,17 @@ export default function LibraryScreen() {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
         {mine.map(item => <View key={item.id} style={{ width: discoveryWidth }}><RecommendationCard item={item} grid={feedColumns > 1} /></View>)}
       </View>
-      {!mine.length && <Empty icon={<BookmarkSimpleIcon size={32} color={p.accent} />} title="Sin descubrimientos" description="Prueba otra búsqueda o añade tu primera recomendación." action={<TextAction onPress={() => { setQuery(''); setCategory('all'); setMinimumRating('0'); }}>Limpiar filtros</TextAction>} />}
+      {!mine.length && <Empty journal icon={<BookmarkSimpleIcon size={32} color={p.accent} />} title="Sin descubrimientos" description="Prueba otra búsqueda o añade tu primera recomendación." action={<TextAction onPress={() => { setQuery(''); setCategory('all'); setMinimumRating('0'); }}>Limpiar filtros</TextAction>} />}
     </> : <>
 
     {!!notice.message && <WishCompletionNotice key={notice.sequence} message={notice.message} />}
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tileGap }}>
       {entries.map(({ item, wish }) => <View key={`${wish ? 'wish' : 'saved'}-${item.id}`} style={{ width: tileWidth }}><WishlistTile item={item} completed={filter === 'finished'} wish={wish} onComplete={showNotice} /></View>)}
     </View>
-    {!entries.length && <Empty icon={<BookmarkSimpleIcon size={32} color={p.accent} weight="duotone" />} title={noMatches ? 'No encontramos ese deseo' : filter === 'pending' ? 'Haz sitio a una ilusión' : 'Lo cumplido tendrá su lugar aquí'} description={noMatches ? 'Prueba con otro título o cambia los filtros.' : filter === 'pending' ? 'Añade un deseo o mueve aquí uno de los que ya tienes.' : 'Marca un deseo como cumplido para verlo en esta colección.'} action={noMatches ? <TextAction onPress={() => { setCategory('all'); setQuery(''); setMinimumRating('0'); }}>Limpiar filtros</TextAction> : filter === 'pending' ? <TextAction onPress={addWish}>Añadir deseo</TextAction> : <TextAction onPress={() => setFilter('pending')}>Ver por cumplir</TextAction>} />}
+    {!entries.length && <Empty journal icon={<BookmarkSimpleIcon size={32} color={p.accent} weight="duotone" />} title={noMatches ? 'No encontramos ese deseo' : filter === 'pending' ? 'Tu lista aún se hace la interesante' : 'Aquí van los «por fin»'} description={noMatches ? 'Prueba con otro título o cambia los filtros.' : filter === 'pending' ? 'Añade un deseo o mueve aquí uno de los que ya tienes. Decidir cuál cumplir primero es problema de tu yo del futuro.' : 'Marca un deseo como cumplido. Tachar cosas de una lista también merece su momento.'} action={noMatches ? <TextAction onPress={() => { setCategory('all'); setQuery(''); setMinimumRating('0'); }}>Limpiar filtros</TextAction> : filter === 'pending' ? <TextAction onPress={addWish}>Añadir deseo</TextAction> : <TextAction onPress={() => setFilter('pending')}>Ver por cumplir</TextAction>} />}
     {filter === 'pending' && <WishlistSurprise key={`${category}:${activeCollection}`} wishes={wishes} recommendations={items} />}
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderTopWidth: 1, borderTopColor: p.line, paddingTop: 16 }}>
-      <Copy muted style={{ fontSize: 13 }}>Visibilidad preferida</Copy>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Visibilidad preferida" style={{ flexDirection: 'row', gap: 4 }}>
-        {([{ value: 'private', label: 'Privada' }, { value: 'public', label: 'Pública' }] as const).map((option) => <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ checked: visibility === option.value }} onPress={() => update((previous) => ({ ...previous, wishlistVisibility: option.value })).catch(showError)} style={({ pressed }) => ({ minHeight: 48, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 12, backgroundColor: visibility === option.value ? p.soft : 'transparent', opacity: pressed ? 0.6 : 1 })}><Copy style={{ color: visibility === option.value ? p.accent : p.muted, fontSize: 13, fontWeight: visibility === option.value ? '600' : '400' }}>{option.label}</Copy></Pressable>)}
-      </View>
+    <View style={{ borderTopWidth: 1, borderTopColor: p.line, paddingTop: 16 }}>
+      <Copy muted style={{ fontSize: 13 }}>Tu wishlist es privada: solo tú puedes ver tus deseos y colecciones.</Copy>
     </View>
     </>}
     </MotionContent>

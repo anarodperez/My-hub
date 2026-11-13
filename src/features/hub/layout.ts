@@ -8,7 +8,7 @@ export function getHubLayout(windowWidth: number, fontScale: number, sidebarVisi
   const largeText = fontScale > 1.3;
   return {
     sidebar, contentWidth, feedWidth,
-    feedColumns: largeText || width < 900 ? 1 : Math.max(1, Math.floor((feedWidth + 16) / 336)),
-    wishColumns: largeText || width < 360 ? 1 : width >= 900 ? Math.max(1, Math.floor((contentWidth + 16) / 256)) : Math.min(maxColumns, 2),
+    feedColumns: largeText || width < 900 ? 1 : Math.max(1, Math.min(4, Math.floor((feedWidth + 16) / 336))),
+    wishColumns: largeText || width < 440 ? 1 : width >= 900 ? Math.max(1, Math.floor((contentWidth + 16) / 256)) : Math.min(maxColumns, 2),
   };
 }

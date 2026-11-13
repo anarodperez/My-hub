@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, type ViewProps } from 'react-native';
+import { Animated, Easing, Platform, type ViewProps } from 'react-native';
 import Reanimated, { Easing as MotionEasing, FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
@@ -11,7 +11,7 @@ export function MotionReveal(props: ViewProps) {
 }
 
 // Keep children mounted so transitions preserve text input focus and local state.
-export function MotionContent({ changeKey, children, style }: { changeKey: string; children: ReactNode; style?: ViewProps['style'] }) {
+export function MotionContent({ changeKey, children, style, distance = 0 }: { changeKey: string; children: ReactNode; style?: ViewProps['style']; distance?: number }) {
   const reduced = useReducedMotion();
   const previous = useRef(changeKey);
   const [opacity] = useState(() => new Animated.Value(1));
@@ -24,9 +24,9 @@ export function MotionContent({ changeKey, children, style }: { changeKey: strin
     }
     previous.current = changeKey;
     opacity.setValue(0.75);
-    const animation = Animated.timing(opacity, { toValue: 1, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true, isInteraction: false });
+    const animation = Animated.timing(opacity, { toValue: 1, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== 'web', isInteraction: false });
     animation.start();
     return () => animation.stop();
   }, [changeKey, reduced, opacity]);
-  return <Animated.View style={[style, { opacity }]}>{children}</Animated.View>;
+  return <Animated.View style={[style, { opacity }, !reduced && distance > 0 && { transform: [{ translateY: opacity.interpolate({ inputRange: [0.75, 1], outputRange: [distance, 0], extrapolate: 'clamp' }) }] }]}>{children}</Animated.View>;
 }

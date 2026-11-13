@@ -1,14 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Platform, useColorScheme } from 'react-native';
-import { File } from 'expo-file-system';
+import { useColorScheme } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import { useAccount } from '@/features/account/provider';
 import { supabase } from '@/features/account/client';
 import { decodeState, emptyState, resolveTheme, type HubState } from './model';
 import { createHubRepository, type HubRepository } from './repository';
 import { createCloudCovers } from './cloud-covers';
-import { applyCloudChange, loadCloudState, type CloudMedia } from './cloud-state';
+import { optimizePhoto, readImageBytes } from './optimize-photo';
+import { applyCloudChange, loadCloudState, privateMediaPaths, type CloudMedia } from './cloud-state';
 import { importLocalHub } from './import-local';
 import { useCalendarReminders } from '@/hooks/use-calendar-reminders';
 import { purgeRetiredSubscriptions } from './storage';
@@ -40,10 +40,7 @@ export function HubProvider({ children }: { children: ReactNode }) {
   const mutationVersion = useRef(0);
   const writing = useRef(false);
   const repository = useMemo(() => supabase && accountId ? createHubRepository(supabase, accountId) : null, [accountId]);
-  const media = useMemo(() => supabase ? createCloudCovers(supabase, async (uri) => {
-    if (Platform.OS === 'web') return new Uint8Array(await (await fetch(uri)).arrayBuffer());
-    return new File(uri).bytes();
-  }, randomUUID) : null, []);
+  const media = useMemo(() => supabase && accountId ? createCloudCovers(supabase, readImageBytes, randomUUID, optimizePhoto) : null, [accountId]);
   const refresh = useCallback(async () => {
     if (!repository || !media || !accountId) return;
     const turn = generation.current;
@@ -101,6 +98,10 @@ export function HubProvider({ children }: { children: ReactNode }) {
         current.current = saved.state; preferences.current = saved.preferences;
         setState(saved.state); setWarning(null);
         await AsyncStorage.setItem('my-hub:account:' + accountId, JSON.stringify(saved.state)).catch(() => setWarning('Guardado en Supabase; copia local pendiente.'));
+        const retained = new Set(privateMediaPaths(saved.state));
+        await media.removeUnused(accountId, privateMediaPaths(previous).filter(path => !retained.has(path))).catch(() => {
+          if (turn === generation.current) setWarning('Guardado. No se pudo limpiar alguna foto anterior; se conserva en Supabase.');
+        });
       } catch (failure) { if (turn === generation.current) { writing.current = false; await refresh().catch(() => {}); } throw failure; }
       finally { if (turn === generation.current) writing.current = false; }
     });

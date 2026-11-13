@@ -36,15 +36,15 @@ export function GroupAvailability({ rows, members, accountId, month, onMonth, se
   const days = calendarDays(month.getFullYear(), month.getMonth());
   const visible = rows.filter(row => members.some(member => member.id === row.owner_id));
   const matches = availabilityMatches(visible, members.map(member => member.id), localDate(new Date())).slice(0, 3);
-  return <View style={{ gap: 20 }}>
-    <View style={{ backgroundColor: p.surface, borderRadius: 16, padding: sideBySide ? 24 : 12, gap: 16 }}>
+  return <View style={{ gap: 24, marginHorizontal: width < 700 ? -12 : 0, flexDirection: sideBySide ? 'row' : 'column', alignItems: 'flex-start' }}>
+    <View style={{ flex: sideBySide ? 1 : undefined, width: sideBySide ? undefined : '100%', minWidth: 0, backgroundColor: p.surface, borderRadius: 16, padding: sideBySide ? 24 : width < 700 ? 4 : 12, gap: 16 }}>
     <CalendarHeading month={month} onChange={onMonth} large={sideBySide} />
     <View>
       <View style={{ flexDirection: 'row' }}>{(sideBySide ? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] : ['L', 'M', 'X', 'J', 'V', 'S', 'D']).map((day, index) => <View key={index} style={{ width: '14.2857%', alignItems: 'center', paddingVertical: 8 }}><Copy muted style={{ fontSize: 14, fontWeight: '600' }}>{day}</Copy></View>)}</View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{days.map((day, index) => {
         const count = day ? Math.max(0, ...periods.map(period => visible.filter(row => row.available !== false && row.available_date === day && row.period === period.value).length)) : 0;
         const hasBusy = visible.some(row => row.available_date === day && row.available === false);
-        return <View key={day || index} style={{ width: '14.2857%', padding: 2 }}>{day && <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={`${displayDate(day)}, ${count} ${count === 1 ? 'persona disponible' : 'personas disponibles'} en una misma franja`} accessibilityState={{ selected: selected === day, disabled: busy }} onPress={() => openDay(day)} style={({ pressed }) => ({ minHeight: sideBySide ? 80 : 64, borderRadius: 12, borderWidth: 1, borderColor: selected === day || day === localDate(new Date()) ? p.accent : sideBySide ? p.line : 'transparent', alignItems: 'center', justifyContent: 'center', backgroundColor: selected === day || pressed ? p.soft : count > 1 ? p.sage : 'transparent', opacity: busy ? 0.5 : pressed ? 0.7 : 1, gap: 2 })}>
+        return <View key={day || index} style={{ width: '14.2857%', padding: width < 700 ? 0 : 2 }}>{day && <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={`${displayDate(day)}, ${count} ${count === 1 ? 'persona disponible' : 'personas disponibles'} en una misma franja`} accessibilityState={{ selected: selected === day, disabled: busy }} onPress={() => openDay(day)} style={({ pressed }) => ({ minHeight: sideBySide ? 64 : 56, borderRadius: 12, borderWidth: 1, borderColor: selected === day || day === localDate(new Date()) ? p.accent : 'transparent', alignItems: 'center', justifyContent: 'center', backgroundColor: selected === day || pressed ? p.soft : count > 1 ? p.sage : 'transparent', opacity: busy ? 0.5 : pressed ? 0.7 : 1, gap: 2 })}>
           <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: selected === day ? p.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}><Copy style={{ color: selected === day ? p.onAccent : count > 1 ? p.sageText : p.text, fontWeight: selected === day ? '700' : '400' }}>{Number(day.slice(-2))}</Copy></View>
           {count > 0 && <Copy style={{ fontSize: 12, lineHeight: 18, color: count > 1 ? p.sageText : p.muted }}>{count} disp.</Copy>}
           {!count && hasBusy && <Copy style={{ fontSize: 12, lineHeight: 18, color: p.peachText }}>No pueden</Copy>}
@@ -94,10 +94,11 @@ export function GroupAvailability({ rows, members, accountId, month, onMonth, se
         </View>
       </SafeAreaView>
     </Modal>
-    <View style={{ gap: 12 }}>
+    <View style={{ width: sideBySide ? 280 : '100%', gap: 16 }}>
       <Section title="Cuándo coincidís" />
-      <View style={{ flexDirection: sideBySide ? 'row' : 'column', flexWrap: 'wrap', gap: 16 }}>
-      {matches.length ? matches.map(match => <View key={`${match.date}:${match.period}`} style={{ flex: sideBySide ? 1 : undefined, minWidth: sideBySide ? 260 : undefined, backgroundColor: p.sage, borderRadius: 16, padding: 16, gap: 8 }}>
+      {!!matches.length && <Copy muted style={{ fontSize: 14, lineHeight: 21 }}>Las agendas han hecho match. Aprovechad.</Copy>}
+      <View style={{ gap: 16 }}>
+      {matches.length ? matches.map(match => <View key={`${match.date}:${match.period}`} style={{ backgroundColor: p.sage, borderRadius: 16, padding: 16, gap: 8 }}>
         <Copy style={{ fontWeight: '600', color: p.sageText }}>{displayDate(match.date)} · {periods.find(period => period.value === match.period)?.label}</Copy>
         <Copy style={{ color: p.sageText }}>{match.people.length} personas disponibles: {match.people.map(id => members.find(member => member.id === id)?.name || 'Sin nombre').join(', ')}</Copy>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>

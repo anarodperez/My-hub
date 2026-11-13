@@ -6,6 +6,51 @@ const owner = '10000000-0000-4000-8000-000000000001';
 const post = { id: '20000000-0000-4000-8000-000000000001', ownerId: owner, revision: 2, title: 'Libro', category: 'book', opinion: 'Me gusta', rating: 5, coverUrl: 'https://signed.example/cover', coverPath: owner + '/post/cover.jpg', createdAt: '2026-10-14T12:00:00Z', visibility: 'group', groupId: '30000000-0000-4000-8000-000000000001' };
 const media = { upload: async () => { throw new Error('Unexpected upload'); } };
 
+test('converting a moment reuses its stored cover instead of uploading or saving a signed URL', async () => {
+  const moment = { category: 'book', title: 'Libro', status: 'current', coverUrl: 'https://signed.example/new-token', coverPath: post.coverPath };
+  const before = { ...emptyState, moments: [moment] };
+  const writes = [];
+  const result = await applyCloudChange(before, { ...before, moments: [], recommendations: [{ ...post, fromMoment: 'book', visibility: 'private', groupId: undefined }] }, {
+    accountId: owner,
+    saveRecommendation: async input => { writes.push(input); return { ...input, id: post.id, owner_id: owner, revision: 1 }; },
+    savePreferences: async () => ({ id: owner, revision: 2 }),
+  }, media, { id: owner, revision: 1 });
+  assert.equal(writes[0].cover_path, post.coverPath);
+  assert.deepEqual(result.state.moments, []);
+  assert.equal(result.state.recommendations[0].coverPath, post.coverPath);
+  assert.equal(Object.hasOwn(result.state.recommendations[0], 'fromMoment'), false);
+});
+
+test('conversion retry retains an existing cover path after a different moment replaces the source', async () => {
+  const before = { ...emptyState, recommendations: [{ ...post, coverUrl: 'https://signed.example/refreshed' }], moments: [{ category: 'book', title: 'Libro nuevo', status: 'current', coverUrl: 'https://signed.example/replacement', coverPath: 'new-path' }] };
+  const writes = [];
+  await applyCloudChange(before, { ...before, recommendations: [{ ...post, fromMoment: 'book', coverUrl: 'https://signed.example/initial' }] }, {
+    accountId: owner, saveRecommendation: async input => { writes.push(input); return { ...input, id: post.id, owner_id: owner, revision: 3 }; },
+  }, media);
+  assert.equal(writes[0].id, post.id);
+  assert.equal(writes[0].cover_path, post.coverPath);
+});
+
+test('a stale conversion never saves an unverified old cover as an expiring URL', async () => {
+  const before = { ...emptyState, moments: [] };
+  await assert.rejects(applyCloudChange(before, { ...before, recommendations: [{ ...post, fromMoment: 'book' }] }, { accountId: owner }, media), /Mi momento ha cambiado/);
+});
+
+test('media cleanup considers moments, songs and stable avatar references', () => {
+  const { privateMediaPaths } = require('../src/features/hub/cloud-state.ts');
+  const state = { ...emptyState, recommendations: [post], moments: [{ category: 'book', title: 'Libro', status: 'current', coverUrl: 'signed', coverPath: 'moment' }], song: { title: 'Song', artist: 'Artist', coverUrl: 'signed', coverPath: 'song' }, preferences: { ...emptyState.preferences, avatarUri: 'signed', avatarPath: 'avatar' } };
+  assert.deepEqual(privateMediaPaths(state), [post.coverPath, 'moment', 'song', 'avatar']);
+});
+
+test('avatar replacement returns its stable path without replacing the local preview', async () => {
+  const before = { ...emptyState, preferences: { ...emptyState.preferences, avatarUri: 'https://old', avatarPath: 'old' } };
+  const writes = [];
+  const saved = await applyCloudChange(before, { ...before, preferences: { ...before.preferences, avatarUri: 'file://new' } }, { accountId: owner, saveProfile: async input => writes.push(input) }, { upload: async () => 'new-path' });
+  assert.equal(writes[0].avatar_path, 'new-path');
+  assert.equal(saved.state.preferences.avatarPath, 'new-path');
+  assert.equal(saved.state.preferences.avatarUri, 'file://new');
+});
+
 test('colecciones se guardan solas con control de revision y sin tocar deseos', async () => {
   const organization = { collections: [{ id: 'personal', name: 'Para mí' }], assignments: { 'wish:wish-1': 'personal' } };
   const before = { ...emptyState, wishes: [{ id: 'wish-1', title: 'Lámpara', category: 'product', coverUrl: '', completed: false }] };
@@ -24,7 +69,7 @@ test('cargar colecciones conserva asignaciones y una cuenta antigua sigue cargan
   const organization = { collections: [{ id: 'gifts', name: 'Regalos' }], assignments: {} };
   for (const preferences of [{ wishlist_organization: organization }, undefined]) {
     const { state } = await loadCloudState({ loadPrivate: async () => ({ recommendations: [], wishlist: [], events: [], preferences }),
-      listDiscoveries: async () => [], getSavedRecommendations: async () => [], listCommentPreviews: async () => [],
+      listDiscoveries: async () => [], getSavedRecommendations: async () => [], listReactionSummaries: async()=>[], listCommentPreviews: async () => [],
     }, { resolve: async () => '' });
     assert.deepEqual(state.wishlistOrganization, preferences ? organization : undefined);
   }

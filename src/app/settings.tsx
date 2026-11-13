@@ -67,7 +67,7 @@ function ProfileEditor() {
   const pending = (state.wishes || []).filter((wish) => !wish.completed).length + state.saved.filter((item) => item.status === 'pending').length;
   const themes: { value: ThemePreference; label: string; description: string; Icon: typeof SunIcon }[] = [
     { value: 'system', label: 'Automático', description: 'Sigue el tema de tu móvil.', Icon: DeviceMobileIcon },
-    { value: 'light', label: 'Claro', description: 'Fondos crema con acentos ciruela, salvia y melocotón.', Icon: SunIcon },
+    { value: 'light', label: 'Claro', description: 'Fondos claros con acentos ciruela, salvia y melocotón.', Icon: SunIcon },
     { value: 'dark', label: 'Oscuro', description: 'Fondos carbón con acentos suaves y texto cálido.', Icon: MoonIcon },
   ];
   const selectedTheme = themes.find((theme) => theme.value === state.preferences.theme)!;
@@ -82,8 +82,8 @@ function ProfileEditor() {
   return <Screen wide back title="Mi cuenta">
     <View style={{ flexDirection: sideBySide ? 'row' : 'column', gap: 32, alignItems: 'flex-start' }}>
     <View style={{ width: sideBySide ? '34%' : '100%', gap: 24 }}>
-    <View style={v.identity}>
-      <View style={{ padding: 7, borderRadius: 70, borderWidth: 1, borderColor: p.line }}>
+    <View style={[v.identity, { backgroundColor: p.surface, borderRadius: 16, padding: 24 }]}>
+      <View style={{ padding: 7, borderRadius: 70, backgroundColor: p.soft }}>
         <Pressable disabled={photoBusy} accessibilityRole="button" accessibilityLabel={state.preferences.avatarUri ? 'Cambiar foto de perfil' : 'Añadir foto de perfil'} accessibilityState={{ disabled: photoBusy, busy: photoBusy }} onPress={() => { void changePhoto(); }} style={({ pressed }) => ({ opacity: photoBusy ? 0.5 : pressed ? 0.7 : 1 })}>
           <ProfileAvatar size={108} />
           <View style={[v.photoEdit, { backgroundColor: p.accent, borderColor: p.background }]}>{photoBusy ? <ActivityIndicator size="small" color={p.onAccent} /> : <PencilSimpleIcon size={15} color={p.onAccent} />}</View>
@@ -102,8 +102,8 @@ function ProfileEditor() {
       <Field label="Tu nombre" value={name} onChangeText={(value) => { setName(value); setSaved(false); }} placeholder="¿Cómo te llamas?" maxLength={40} editable={!busy} />
       <SaveAction busy={busy} disabled={name.trim() === state.preferences.name} onPress={() => { void saveName(); }} />
     </View>}
-    <View style={[v.stats, { borderColor: p.line }]}>
-      {[{ label: 'Publicaciones', count: state.recommendations.filter((item) => !item.sample && (!item.ownerId || item.ownerId === session?.user.id)).length, route: '/' as const }, { label: 'Deseos', count: pending, route: '/library' as const }, { label: 'Eventos', count: state.events.length, route: '/calendar' as const }].map((item, index) => <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={`${item.count} ${item.label.toLowerCase()}. Ver lista`} onPress={() => router.push(item.route as Href)} style={({ pressed }) => ({ flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 4, borderLeftWidth: index ? 1 : 0, borderColor: p.line, opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 24, lineHeight: 30, fontWeight: '600' }}>{item.count}</Copy><Copy muted style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>{item.label}</Copy></Pressable>)}
+    <View style={[v.stats, { borderColor: p.line, backgroundColor: p.surface, borderRadius: 16 }]}>
+      {[{ label: 'Publicaciones', count: state.recommendations.filter((item) => !item.sample && (!item.ownerId || item.ownerId === session?.user.id)).length, route: { pathname: '/library', params: { view: 'mine' } } }, { label: 'Deseos', count: pending, route: { pathname: '/library', params: { view: 'wishlist' } } }, { label: 'Eventos', count: state.events.length, route: '/calendar' as const }].map((item, index) => <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={`${item.count} ${item.label.toLowerCase()}. Ver lista`} onPress={() => router.push(item.route as Href)} style={({ pressed }) => ({ flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 4, borderLeftWidth: index ? 1 : 0, borderColor: p.line, opacity: pressed ? 0.6 : 1 })}><Copy style={{ fontSize: 24, lineHeight: 30, fontWeight: '600' }}>{item.count}</Copy><Copy muted style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>{item.label}</Copy></Pressable>)}
     </View>
     </View>
     <View style={{ flex: sideBySide ? 1 : undefined, width: sideBySide ? undefined : '100%', gap: 24 }}>

@@ -1,7 +1,7 @@
 export const hubPalettes = {
   light: {
-    background: '#F8F6F1', surface: '#FFFEFC', text: '#302D32', muted: '#6D6661',
-    accent: '#705080', onAccent: '#FFFFFF', soft: '#F0ECE6', line: '#DFD9D3', inputBorder: '#978B83',
+    background: '#F7F5F8', surface: '#FFFEFC', text: '#302D32', muted: '#6E6371',
+    accent: '#705080', onAccent: '#FFFFFF', soft: '#EEE9F2', line: '#E0D9E5', inputBorder: '#93839B',
     sage: '#E2EBDD', sageText: '#36533D', peach: '#F7E9DF', peachText: '#804932', danger: '#AD3548',
   },
   dark: {

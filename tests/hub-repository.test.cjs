@@ -7,7 +7,7 @@ function client(result) {
   if(key==='then')return (resolve,reject)=>Promise.resolve(result).then(resolve,reject);
   return (...args)=>{calls.push([key,...args]);return query;};
  }});
- return { calls, from:table=>{calls.push(['from',table]);return query;}, rpc:()=>query };
+ return { calls, from:table=>{calls.push(['from',table]);return query;}, rpc:(...args)=>{calls.push(['rpc',...args]);return query;} };
 }
 const owner='10000000-0000-4000-8000-000000000001';
 const id='20000000-0000-4000-8000-000000000001';
@@ -19,6 +19,15 @@ test('preferencias validan colecciones y clientes anteriores no sobrescriben su 
  await repo.savePreferences({id:owner,revision:1,theme:'dark'});
  const payload=db.calls.find(c=>c[0]==='update')[1];
  assert.equal(Object.hasOwn(payload,'wishlist_organization'),false);
+ assert.equal(Object.hasOwn(payload,'current_media'),false);
+});
+
+test('moment preferences reject duplicate slots and unuploaded web images before writing', () => {
+ const db=client({data:{id:owner,revision:2},error:null}); const repo=createHubRepository(db,owner);
+ const item={category:'book',title:'Libro',status:'current',coverUrl:''};
+ assert.throws(()=>repo.savePreferences({current_media:[item,item]}),/momento/);
+ assert.throws(()=>repo.savePreferences({current_media:[{...item,coverUrl:'data:image/png;base64,AAAA'}]}),/momento/);
+ assert.equal(db.calls.length,0);
 });
 test('grupos incluyen recuento de miembros en la misma consulta',async()=>{
  const db=client({data:[],error:null});await createHubRepository(db,owner).listGroups();
@@ -56,4 +65,18 @@ test('no enviar campos de propietario ajeno ni una fecha vacia',async()=>{
  await repo.saveEvent({title:'Plan',category:'book',event_date:'2026-10-20',owner_id:'attacker'});
  const payload=db.calls.find(c=>c[0]==='insert')[1];assert.equal(payload.owner_id,owner);assert.equal(payload.title,'Plan');
  await assert.rejects(repo.saveEvent({title:'Plan',category:'book',event_date:'bad'}),/fecha/i);
+});
+
+
+test('reaction reads deduplicate and batch, writes use RPC and reject unknown kinds',async()=>{
+ const db=client({data:[],error:null});const repo=createHubRepository(db,owner);
+ await repo.listReactionSummaries([]);assert.equal(db.calls.length,0);
+ const ids=Array.from({length:101},(_,i)=>'20000000-0000-4000-8000-'+String(i).padStart(12,'0'));
+ await repo.listReactionSummaries([...ids,ids[0]]);
+ assert.deepEqual(db.calls.filter(c=>c[0]==='rpc').map(c=>c[2].targets.length),[100,1]);
+ await assert.rejects(repo.setReaction(id,'unknown'),/reacci/);
+ const write=client({data:[{post_id:id,mine:'need',need_count:1}],error:null});
+ assert.equal((await createHubRepository(write,owner).setReaction(id,'need')).mine,'need');
+ assert.deepEqual(write.calls[0],['rpc','set_recommendation_reaction',{target:id,next_kind:'need'}]);
+ assert.throws(()=>repo.setGroupCover(id,'unknown'),/portada/i);
 });
