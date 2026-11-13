@@ -1,4 +1,5 @@
 import type { Category, HubState } from './model.ts';
+import { wishlistOrganization } from './wishlist-collections.ts';
 
 export function filterCollection<T extends { title: string; category: Category; rating?: number }>(items: T[], query: string, category: Category | 'all', minimumRating = 0): T[] {
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
@@ -6,13 +7,15 @@ export function filterCollection<T extends { title: string; category: Category; 
   return items.filter(item => normalize(item.title).includes(term) && (category === 'all' || item.category === category) && (!minimumRating || (item.rating ?? 0) >= minimumRating));
 }
 
-export function selectWishlist(state: HubState, status: 'pending' | 'finished', category: Category | 'all') {
+export function selectWishlist(state: HubState, status: 'pending' | 'finished', category: Category | 'all', collection = 'all') {
+  const assignments = wishlistOrganization(state).assignments;
+  const includes = (key: string) => collection === 'all' || (assignments[key] || 'unassigned') === collection;
   const byId = new Map(state.recommendations.map((item) => [item.id, item]));
-  const saved = state.saved.flatMap((entry) => {
+  const saved = state.saved.filter(entry => includes(`saved:${entry.recommendationId}`)).flatMap((entry) => {
     const item = byId.get(entry.recommendationId);
     return item ? [{ item, status: entry.status }] : [];
   });
-  const allWishes = state.wishes || [];
+  const allWishes = (state.wishes || []).filter(wish => includes(`wish:${wish.id}`));
   const counts = {
     pending: saved.filter((entry) => entry.status === 'pending').length + allWishes.filter((wish) => !wish.completed).length,
     finished: saved.filter((entry) => entry.status === 'finished').length + allWishes.filter((wish) => wish.completed).length,

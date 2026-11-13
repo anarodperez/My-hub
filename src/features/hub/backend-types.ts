@@ -1,4 +1,6 @@
 import type { Category, ThemePreference } from './model.ts';
+import type { WishlistOrganization } from './wishlist-collections.ts';
+import type { Moment } from './moments.ts';
 
 export type Visibility = 'private' | 'public' | 'group';
 export type Versioned = { id: string; revision: number; updated_at: string };
@@ -14,15 +16,17 @@ export type EventInput = { title: string; category: Category; event_date: string
 export type EventRow = EventInput & Versioned & { owner_id: string };
 export type SongInput = { title: string; artist: string; cover_path?: string; link?: string | null };
 export type SongRow = SongInput & Versioned;
-export type PreferencesInput = { theme?: ThemePreference; wishlist_visibility?: 'private' | 'public' };
+export type PreferencesInput = { theme?: ThemePreference; wishlist_visibility?: 'private' | 'public'; wishlist_organization?: WishlistOrganization; current_media?: Moment[] };
 export type PreferencesRow = PreferencesInput & Versioned;
 export type Edit<T> = T & { id?: string; newId?: string; revision?: number };
-export type GroupRow = { id: string; owner_id: string; name: string; created_at: string; group_members?: { count: number }[] };
+export type GroupRow = { id: string; owner_id: string; name: string; cover_key?: 'coffee' | 'reading' | 'flowers' | null; created_at: string; group_members?: { count: number }[] };
 export type CommentRow = { id: string; post_id: string; author_id: string; body: string; gif_path?: string | null; created_at: string };
 export type Author = { id: string; name: string; avatar_path: string | null };
 export type AvailabilityPeriod = 'morning' | 'afternoon' | 'evening';
-export type AvailabilityRow = { id: string; group_id: string; owner_id: string; available_date: string; period: AvailabilityPeriod };
+export type AvailabilityRow = { id: string; group_id: string; owner_id: string; available_date: string; period: AvailabilityPeriod; available?: boolean };
 export type GroupPostKind = 'plan' | 'gift';
-export type GroupPostInput = { newId: string; group_id: string; kind: GroupPostKind; title: string; description: string; event_date?: string | null; cover_path?: string };
+export type OfferMode = 'gift' | 'fixed' | 'auction';
+export type GroupPostInput = { newId: string; group_id: string; kind: GroupPostKind; title: string; description: string; event_date?: string | null; cover_path?: string; gift_draw_at?: string | null; offer_mode?: OfferMode; price_cents?: number | null };
+export type GroupBid = { post_id: string; owner_id: string; amount_cents: number };
 export type GroupResponse = { post_id: string; owner_id: string };
-export type GroupPostRow = Omit<GroupPostInput, 'newId'> & Versioned & { owner_id: string; created_at: string; status: 'open' | 'delivered'; group_post_responses: GroupResponse[] };
+export type GroupPostRow = Omit<GroupPostInput, 'newId'> & Versioned & { owner_id: string; created_at: string; status: 'open' | 'reserved' | 'delivered'; reserved_for: string | null; gift_drawn_at?: string | null; winning_bid_cents?: number | null; group_post_bids?: GroupBid[]; group_post_responses: GroupResponse[] };

@@ -14,7 +14,22 @@ export function imageMime(bytes: Uint8Array): string {
   throw new Error('El archivo no es una imagen compatible. Elige JPEG, PNG, WebP, HEIC o AVIF.');
 }
 
-export function createCloudCovers(client: SupabaseClient, read: (uri: string) => Promise<Uint8Array>, newId: () => string) {
+export function createCloudCovers(client: SupabaseClient, read: (uri: string) => Promise<Uint8Array>, newId: () => string, optimize = read) {
+  const signed = new Map<string, { expires: number; url: Promise<string> }>();
+  const resolve = (path: string, bucket: string, seconds: number): Promise<string> => {
+    const key = `${bucket}:${path}`;
+    const cached = signed.get(key);
+    if (cached && cached.expires > Date.now()) return cached.url;
+    const entry = { expires: Date.now() + (seconds - 60) * 1000, url: Promise.resolve('') };
+    entry.url = (async () => {
+      const { data, error } = await client.storage.from(bucket).createSignedUrl(path, seconds);
+      if (error || !data?.signedUrl) throw new Error(error?.message || 'No se puede acceder a la foto.');
+      return data.signedUrl;
+    })().catch(error => { if (signed.get(key) === entry) signed.delete(key); throw error; });
+    if (signed.size >= 500) signed.delete(signed.keys().next().value!);
+    signed.set(key, entry);
+    return entry.url;
+  };
   return {
     async uploadGif(owner: string, comment: string, uri: string): Promise<string> {
       const bytes = await read(uri);
@@ -29,24 +44,29 @@ export function createCloudCovers(client: SupabaseClient, read: (uri: string) =>
       return path;
     },
     async resolveGif(path: string): Promise<string> {
-      const { data, error } = await client.storage.from('comment-gifs').createSignedUrl(path, 300);
-      if (error || !data?.signedUrl) throw new Error('No se puede acceder al GIF.');
-      return data.signedUrl;
+      return resolve(path, 'comment-gifs', 300);
     },
     async upload(owner: string, entity: string, uri: string, bucket: 'hub-media' | 'group-media' = 'hub-media', groupId?: string): Promise<string> {
       if (!uri || /^https?:\/\//.test(uri)) return uri;
-      const bytes = await read(uri);
+      const bytes = await optimize(uri);
+      if (bytes.length > 256 * 1024) throw new Error('La foto optimizada debe ocupar como máximo 256 KB.');
       const contentType = imageMime(bytes);
       const path = `${owner}/${groupId ? groupId + '/' : ''}${entity}/${newId()}.${contentType.split('/')[1]}`;
-      const { error } = await client.storage.from(bucket).upload(path, bytes, { contentType, upsert: false });
+      const { error } = await client.storage.from(bucket).upload(path, bytes, { contentType, cacheControl: '3600', upsert: false });
       if (error) throw new Error(error.message);
       return path;
     },
     async resolve(path: string, bucket: 'hub-media' | 'group-media' = 'hub-media'): Promise<string> {
       if (!path || /^https?:\/\//.test(path)) return path;
-      const { data, error } = await client.storage.from(bucket).createSignedUrl(path, 3600);
-      if (error || !data?.signedUrl) throw new Error(error?.message || 'No se puede acceder a la foto.');
-      return data.signedUrl;
+      return resolve(path, bucket, 3600);
+    },
+    async removeUnused(owner: string, paths: string[]): Promise<void> {
+      const owned = [...new Set(paths.filter(path => path.startsWith(owner + '/') && path.split('/').length === 3))];
+      if (!owned.length) return;
+      // Storage RLS rechecks every reference, including other entities using this photo.
+      const { error } = await client.storage.from('hub-media').remove(owned);
+      if (error) throw new Error('La foto anterior sigue pendiente de limpieza.');
+      for (const path of owned) signed.delete(`hub-media:${path}`);
     },
   };
 }

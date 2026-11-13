@@ -1,22 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Platform, useColorScheme } from 'react-native';
-import { File } from 'expo-file-system';
+import { useColorScheme } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import { useAccount } from '@/features/account/provider';
 import { supabase } from '@/features/account/client';
 import { decodeState, emptyState, resolveTheme, type HubState } from './model';
 import { createHubRepository, type HubRepository } from './repository';
 import { createCloudCovers } from './cloud-covers';
-import { applyCloudChange, loadCloudState, type CloudMedia } from './cloud-state';
+import { optimizePhoto, readImageBytes } from './optimize-photo';
+import { applyCloudChange, loadCloudState, privateMediaPaths, type CloudMedia } from './cloud-state';
 import { importLocalHub } from './import-local';
 import { useCalendarReminders } from '@/hooks/use-calendar-reminders';
 import { purgeRetiredSubscriptions } from './storage';
-
-const palettes = {
-  light: { background: '#FAF7F2', surface: '#FFFDFA', text: '#302936', muted: '#716777', accent: '#705080', onAccent: '#FFFFFF', soft: '#EDE4F1', line: '#E4DDE4', sage: '#DCE8DA', sageText: '#3C5940', danger: '#AD3548' },
-  dark: { background: '#19161D', surface: '#25212B', text: '#F5EFF7', muted: '#B8AABD', accent: '#C4A7DC', onAccent: '#24182D', soft: '#3B2E45', line: '#443B49', sage: '#33463B', sageText: '#C2DAC5', danger: '#FFA9B6' },
-};
+import { hubPalettes as palettes } from '@/constants/hub-palettes';
 type HubContextValue = {
   state: HubState; loading: boolean; error: string | null; warning: string | null; retry: () => void;
   update: (change: (state: HubState) => HubState) => Promise<void>;
@@ -44,10 +40,7 @@ export function HubProvider({ children }: { children: ReactNode }) {
   const mutationVersion = useRef(0);
   const writing = useRef(false);
   const repository = useMemo(() => supabase && accountId ? createHubRepository(supabase, accountId) : null, [accountId]);
-  const media = useMemo(() => supabase ? createCloudCovers(supabase, async (uri) => {
-    if (Platform.OS === 'web') return new Uint8Array(await (await fetch(uri)).arrayBuffer());
-    return new File(uri).bytes();
-  }, randomUUID) : null, []);
+  const media = useMemo(() => supabase && accountId ? createCloudCovers(supabase, readImageBytes, randomUUID, optimizePhoto) : null, [accountId]);
   const refresh = useCallback(async () => {
     if (!repository || !media || !accountId) return;
     const turn = generation.current;
@@ -105,6 +98,10 @@ export function HubProvider({ children }: { children: ReactNode }) {
         current.current = saved.state; preferences.current = saved.preferences;
         setState(saved.state); setWarning(null);
         await AsyncStorage.setItem('my-hub:account:' + accountId, JSON.stringify(saved.state)).catch(() => setWarning('Guardado en Supabase; copia local pendiente.'));
+        const retained = new Set(privateMediaPaths(saved.state));
+        await media.removeUnused(accountId, privateMediaPaths(previous).filter(path => !retained.has(path))).catch(() => {
+          if (turn === generation.current) setWarning('Guardado. No se pudo limpiar alguna foto anterior; se conserva en Supabase.');
+        });
       } catch (failure) { if (turn === generation.current) { writing.current = false; await refresh().catch(() => {}); } throw failure; }
       finally { if (turn === generation.current) writing.current = false; }
     });

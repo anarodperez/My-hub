@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { BellIcon } from 'phosphor-react-native/src/icons/Bell';
-import { Copy, TextAction } from './hub-ui';
+import { Copy, IconAction, TextAction } from './hub-ui';
+import { BellSlashIcon } from './hub-icons';
 import { useHub, usePalette } from '@/features/hub/provider';
 import type { CalendarEvent } from '@/features/hub/model';
 import { calendarReminders, remindersSupported } from '@/features/hub/calendar-notifications';
@@ -39,7 +40,7 @@ export function CalendarReminder({ event }: { event: CalendarEvent }) {
       <Copy muted style={{ fontSize: 13, lineHeight: 19 }}>Solo en este móvil, a las 9:00 de tu hora local.</Copy>
       <TextAction disabled={busy} onPress={() => { void save(0); }}>El mismo día</TextAction>
       <TextAction disabled={busy} onPress={() => { void save(1); }}>Un día antes</TextAction>
-      {lead !== null && <TextAction disabled={busy} onPress={() => { void save(null); }}>Quitar recordatorio</TextAction>}
+      {lead !== null && <IconAction label="Quitar recordatorio" disabled={busy} onPress={() => { void save(null); }}><BellSlashIcon size={23} color={p.muted} /></IconAction>}
     </View>}
     {!!error && <Copy accessibilityRole="alert" style={{ color: p.danger, fontSize: 13 }}>{error}</Copy>}
   </View>;
